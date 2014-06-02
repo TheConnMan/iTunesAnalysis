@@ -23,6 +23,7 @@ function upload() {
 	}
 }
 
+// Parses xml and creates full data
 function parseXML(xml) {
 	var date = new Date(xml.children('date').text());
 	var raw = xml.children('dict').children('dict')
@@ -40,10 +41,13 @@ function parseXML(xml) {
 	createTopSongs();
 }
 
+// Creates top songs chart
 function createTopSongs() {
+	// Remove old svg
+	d3.select('#topSongs').select('svg').remove();
 	// Adjust default parameters
-	margin.left = 10
-	margin.top = 50
+	margin.left = 10;
+	margin.top = 50;
 	var z = 'Play Count';
 	
 	// Create SVG
@@ -106,6 +110,7 @@ function createTopSongs() {
 		refresh(selected);
 	}
 	
+	// Refreshes data
 	function refresh(selected) {
 		// Initialize top song data
 		var data = getData(selected);
@@ -118,7 +123,7 @@ function createTopSongs() {
 		svg.selectAll('.topSong-data').data(data).exit().remove();
 		svg.selectAll('.topSong-count').data(data).exit().remove();
 		
-		svg.selectAll('.topSong-name, .topSong-count').transition().duration(delay).style('opacity', 0)
+		svg.selectAll('.topSong-name, .topSong-count').transition().duration(delay).style('opacity', 0);
 		
 		setTimeout(function() {
 			var nameText = svg.selectAll('.topSong-name').data(data).enter()
@@ -146,7 +151,7 @@ function createTopSongs() {
 			svg.selectAll('.topSong-name').transition().duration(delay).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 15) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
 			svg.selectAll('.topSong-count').transition().duration(delay).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
-		}, delay)
+		}, svg.selectAll('.topSong-data')[0].length == 0 ? 0 : delay);
 	}
 	
 	// Filters down to top songs
@@ -167,6 +172,7 @@ function createTopSongs() {
 	}
 }
 
+// Finds the true size of text when rendered
 function getTextSize(text) {
 	var t = d3.select('svg').append('text').attr('id', 'test-text').text(text);
 	var size = $('#test-text').width();
