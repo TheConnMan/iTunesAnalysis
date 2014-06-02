@@ -2,6 +2,7 @@
 <html>
     <head>
 		<link href="./css/iTunes.css" type="text/css" rel="stylesheet" />
+		<link href="//fonts.googleapis.com/css?family=Lato:100italic,100,300italic,300,400italic,400,700italic,700,900italic,900" rel="stylesheet" type="text/css">
         <title>iTunes Analysis</title>
     </head>
     <body>
@@ -22,14 +23,19 @@
 			<div id="content">
 				<h1>iTunes Analysis</h1>
 				<p>
-					A small project to help analyze your iTunes library, all online by uploading a single file.
+					A small project to help analyze your iTunes library, all online by uploading a single file. The default data is mine and I will most likely by embarrassed by some of the results.
 				</p>
 				<input type="file" id="file">
 				<button onclick="upload()">Upload</button>
-				<div id="topSongs" class="svg"></div>
 				<p>
 					Upload your <b>iTunes Music Library.xml</b> file located in your iTunes music folder to begin analysis.
 				</p>
+				<h2>Top 25 Songs</h2>
+				<p>
+					 Below are the top 25 songs in your library as well as the top 10 genres. Click on a genre to filter by it and see the new top 25.
+					 Each song's color is that of its genre. Songs whose genre is not in the top 10 are black.
+				</p>
+				<div id="topSongs" class="svg"></div>
 			</div>
 			<div id="footer">
 				Created by Brian Conn. Contact me at <a href="mailto:brian@theconnman.com">brian@theconnman.com</a>.

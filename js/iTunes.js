@@ -1,8 +1,11 @@
-var full, width, margin = {left: 20, right: 20, top: 20, bottom: 20},
-	height = 600 - margin.top - margin.bottom, pad = 5, delay = 750;
+var full, width, margin = {left: 20, right: 40, top: 20, bottom: 20},
+	height = 800, pad = 5, delay = 1500;
 
 $(function() {
-	width = $('#svg').width() - margin.left - margin.right;
+	width = $('#topSongs').width();
+	$.get( "./data/Library.xml", function(data) {
+		parseXML($(data).children('plist').children('dict'))
+	});
 })
 
 function upload() {
@@ -23,31 +26,150 @@ function upload() {
 function parseXML(xml) {
 	var date = new Date(xml.children('date').text());
 	var raw = xml.children('dict').children('dict')
-	full = raw.map(function(i, d) {
+	full = $.makeArray(raw.map(function(i, d) {
 		var obj = {};
 		$(d).find('key').each(function() {
-			obj[$(this).text()] = $(this).next().text()
+			var val = $(this).next().text();
+			if (!isNaN(val)) {
+				val = parseInt(val);
+			}
+			obj[$(this).text()] = val;
 		})
 		return obj;
-	})
+	}));
 	createTopSongs();
 }
 
 function createTopSongs() {
+	// Adjust default parameters
+	margin.left = 0
+	margin.top = 50
+	var z = 'Play Count';
+	
+	// Create SVG
 	var svg = d3.select('#topSongs').append('svg')
-		.attr('width', width).attr('height');
-	var colors = d3.scale.category10();
-	var raw = full.sort(function(a, b) { return a['Track Count'] - b['Track Count']; }).slice(0, Math.min(full.length, 20));
-	var w = width / raw.length - 2 * pad;
-	var scale = d3.scale.linear().domain(d3.extent(raw, function(d) { return d['Track Count']; })).range([0, height])
-	var data = raw.map(function(d, i) {
-		var c = d['Track Count'];
-		return {count: c, x: w * i + pad, w: w, y: height + margin.top - scale(c), h: scale(c)};
-	})
-	var rects = svg.selectAll('.topSong-data').data(data).enter()
-		.append('rect')
+		.attr('width', width).attr('height', height);
+	var colors = d3.scale.category10().domain(d3.range(5));
+	
+	// Initialize genre data
+	var genres = [];
+	$.each(full.reduce(function(all, cur) {
+		if (all[cur['Genre']]) {
+			all[cur['Genre']]++;
+		} else if(cur['Genre']) {
+			all[cur['Genre']] = 1;
+		};
+		return all;
+	}, {}), function(k, v) {
+		genres.push({name: k, count: v});
+	});
+	
+	// Find genre text sizes
+	var total = width - margin.right;
+	genres = genres.sort(function(a, b) { return b.count - a.count; }).slice(0, Math.min(10, genres.length)).map(function(d, i) {
+		var w = getTextSize(d.name);
+		total -= w + 4 * pad;
+		return {count: d.count, name: d.name, color: colors(i), w: w + 2 * pad, x: total};
+	});
+	svg.append('text').attr('transform', 'translate(' + (total - 10) + ',30)').text('Top Genres').style('font-size', '22px').style('text-anchor', 'end')
+	
+	// Create genre text so size can be measured
+	var genreLegend = svg.selectAll('topSong-genre').data(genres).enter().append('g').attr('class', 'topSong-genre').on('click', function(d) {
+		filter(d, d3.select(this));
+	});
+	// Create genre rectangles and text
+	genreLegend.data(genres).append('rect')
 		.attr('width', function(d) { return d.w; })
-		.attr('height', function(d) { return d.h; })
-		.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+		.attr('height', 30)
+		.attr('transform', function(d) { return 'translate(' + d.x + ',10)'; })
+		.attr('rx', pad).attr('ry', pad)
+		.style('stroke', function(d) { return d.color; });
+	genreLegend.append('text')
+		.attr('transform', function(d) { return 'translate(' + (d.x + d.w / 2) + ',30)'; })
+		.text(function(d) { return d.name; });
+	
+	refresh([])
+	
+	// Update filters
+	function filter(d, me) {
+		var classes = me.attr('class').split(' ');
+		if (classes.length == 1) {
+			me.select('rect').style('fill', d.color);
+			me.select('text').style('fill', 'white');
+			me.attr('class', classes[0] + ' selected');
+		} else {
+			me.select('rect').style('fill', 'none');
+			me.select('text').style('fill', '#555555');
+			me.attr('class', classes[0]);
+		}
+		var selected = svg.selectAll('.selected')[0].map(function(d) { return d3.select(d).select('text').text(); });
+		refresh(selected);
+	}
+	
+	function refresh(selected) {
+		// Initialize top song data
+		var data = getData(selected);
 		
+		var x0 = d3.max(data, function(d) { return getTextSize(d.name); }) + margin.left - 10;
+		
+		// Create bars and count text
+		var scale = d3.scale.linear().domain([0, d3.max(data, function(d) { return d.data[z]; })]).range([0, width - margin.right - x0]);
+		svg.selectAll('.topSong-name').data(data).exit().remove();
+		svg.selectAll('.topSong-data').data(data).exit().remove();
+		svg.selectAll('.topSong-count').data(data).exit().remove();
+		
+		svg.selectAll('.topSong-name, .topSong-count').transition().duration(delay).style('opacity', 0)
+		
+		setTimeout(function() {
+			var nameText = svg.selectAll('.topSong-name').data(data).enter()
+				.append('text')
+				.attr('class', 'topSong-name')
+				.attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 15) + ')'; })
+				.style('opacity', 0)
+				.text(function(d) { return d.name; });
+			var rects = svg.selectAll('.topSong-data').data(data).enter()
+				.append('rect')
+				.attr('class', 'topSong-data')
+				.attr('width', 0)
+				.attr('height', function(d) { return d.h; })
+				.attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
+				.style('fill', function(d) { return getColor(d, genres); });
+			var countText = svg.selectAll('.topSong-count').data(data).enter()
+				.append('text')
+				.attr('class', 'topSong-count')
+				.attr('transform', function(d) { return 'translate(' + (x0 + 5) + ',' + (d.y + 15) + ')'; })
+				.text(function(d) { return d.data[z]; });
+			
+			// Transitions
+			svg.selectAll('.topSong-data').transition().duration(delay).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
+				.attr('width', function(d) { return scale(d.data[z]); }).style('fill', function(d) { return getColor(d, genres); })
+			svg.selectAll('.topSong-name').transition().duration(delay).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 15) + ')'; })
+				.style('opacity', 1).text(function(d) { return d.name; });
+			svg.selectAll('.topSong-count').transition().duration(delay).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
+		}, delay)
+	}
+	
+	// Filters down to top songs
+	function getData(selected) {
+		var filtered = full.filter(function(d) { return selected.length == 0 || selected.indexOf(d['Genre']) != -1; })
+		var raw = filtered.sort(function(a, b) { return (b[z] ? b[z] : 0) - (a[z] ? a[z] : 0); }).slice(0, Math.min(filtered.length, 25));
+		var h = (height - margin.top - margin.bottom) / raw.length - 2 * pad;
+		return raw.map(function(d, i) {
+			var c = d[z];
+			return {data: d, y: (h + 2 * pad) * i + pad + margin.top, h: h, name: d['Name'] + ' - ' + d['Artist']};
+		});
+	}
+	
+	// Get bar color
+	function getColor(d, genres) {
+		var c = $.grep(genres, function(g) { return g.name == d.data['Genre']; });
+		return c.length != 0 ? c[0].color : 'black';
+	}
+}
+
+function getTextSize(text) {
+	var t = d3.select('svg').append('text').attr('id', 'test-text').text(text);
+	var size = $('#test-text').width();
+	t.remove();
+	return size;
 }
