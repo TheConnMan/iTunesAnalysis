@@ -42,7 +42,7 @@ function parseXML(xml) {
 
 function createTopSongs() {
 	// Adjust default parameters
-	margin.left = 0
+	margin.left = 10
 	margin.top = 50
 	var z = 'Play Count';
 	
@@ -65,8 +65,8 @@ function createTopSongs() {
 	});
 	
 	// Find genre text sizes
-	var total = width - margin.right;
-	genres = genres.sort(function(a, b) { return b.count - a.count; }).slice(0, Math.min(10, genres.length)).map(function(d, i) {
+	var total = width;
+	genres = genres.sort(function(a, b) { return b.count - a.count; }).slice(0, Math.min(10, genres.length)).reverse().map(function(d, i) {
 		var w = getTextSize(d.name);
 		total -= w + 4 * pad;
 		return {count: d.count, name: d.name, color: colors(i), w: w + 2 * pad, x: total};
@@ -110,7 +110,7 @@ function createTopSongs() {
 		// Initialize top song data
 		var data = getData(selected);
 		
-		var x0 = d3.max(data, function(d) { return getTextSize(d.name); }) + margin.left - 10;
+		var x0 = d3.max(data, function(d) { return getTextSize(d.name); }) + margin.left;
 		
 		// Create bars and count text
 		var scale = d3.scale.linear().domain([0, d3.max(data, function(d) { return d.data[z]; })]).range([0, width - margin.right - x0]);

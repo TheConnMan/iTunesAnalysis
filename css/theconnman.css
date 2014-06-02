@@ -1,0 +1,162 @@
+a:link {color: #0C4A77;}
+a:visited {color: #555555;}
+a:hover {color: #EF7519;}
+
+body {
+	text-align: center;
+	background-color: #ffffff;
+	/*font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;*/
+	font-family: Lato;
+}
+
+button {
+	padding: 5px 10px 5px 10px;
+	background-color: #555555;
+	color: white;
+	font-weight: bold;
+	border: none;
+	border-radius: 5px;
+}
+
+button:hover {
+	cursor: pointer;
+}
+
+h1 {
+	color: #555555;
+	font-size: 5em;
+	font-family: Lato;
+	font-weight: lighter;
+	margin-bottom: 0px;
+}
+
+h2 {
+	color: #EF7519;
+	font-size: 2em;
+	font-weight: 300;
+}
+
+h3 {
+	color: #1794EE;
+	margin-top: 3em;
+	font-weight: 300;
+}
+
+img {
+	width: 200px;
+	padding: 0 20px 20px 20px;
+}
+
+p {
+	color: #555555;
+	line-height: 2em;
+	font-size: .9em;
+}
+
+#content {
+	text-align: left;
+	margin: 0 auto;
+	width: 600px;
+	margin-bottom: 40px;
+	width: 700px;
+	margin-top: 70px;
+}
+
+#header {
+	width: 100%;
+	margin: 0 auto;
+}
+
+#footer {
+	width: 100%;
+	margin-top: 20px;
+	margin-bottom: 20px;
+	color: #555555;
+}
+
+.inlineTitle {
+	color: #1794EE;
+	font-weight: 300;
+}
+
+.quote {
+	margin: 30px;
+	padding: 20px;
+	background-color: #C5E4FA;
+	/*border: 1px solid black;*/
+	border-radius: 5px;
+	font-size: .75em;
+	line-height: 1.5em;
+}
+
+/* Images */
+
+.leftImg {
+	float: left;
+}
+
+.rightImg {
+	float: right;
+}
+
+/* Menu */
+
+#menuHeader {
+	background-color: #555555;
+	height: 40px;
+}
+#menu,
+#menu ul {
+    list-style: none;
+    display: inline;
+}
+#menu > li {
+    float: left;
+}
+#menu li a {
+    display: block;
+    height: 40px;
+    line-height: 3em;
+    padding: 0 1em;
+    text-decoration: none;
+    
+}
+#menu ul {
+    position: absolute;
+    display: none;
+    z-index: 999;
+}
+#menu ul li a {
+    width: 100px;
+    float: left;
+}
+#menu li:hover ul {
+    display: block;
+}
+#menu {
+    font-family: Arial;
+    font-size: 14px;
+    background-color: #555555;
+}
+#menu > li > a {
+    color: white;
+    font-weight: bold;
+	background-color: #555555;
+}
+#menu > li:hover > a {
+    background: #1794EE;
+    color: #000;
+}
+#menu ul {
+    background: #1794EE;
+}
+#menu ul li a {
+    color: #000;
+}
+#menu ul li:hover a {
+    background: #37B4FF;
+}
+
+#menu ul li {
+	margin-left: -40px;
+}
