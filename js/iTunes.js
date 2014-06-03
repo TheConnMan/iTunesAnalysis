@@ -1,5 +1,6 @@
-var full, width, margin = {left: 20, right: 40, top: 20, bottom: 20},
-	height = 800, pad = 5, delay = 1500;
+var full, width, margin = {left: 20, right: 40, top: 50, bottom: 20},
+	height = 800, pad = 5, delay = 1500,
+	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating'];
 
 $(function() {
 	width = $('#topSongs').width();
@@ -14,7 +15,6 @@ function upload() {
 		var r = new FileReader();
 		r.onload = function(e) {
 			var doc = $.parseXML(e.target.result);
-			console.log(doc)
 			parseXML($(doc).children('plist').children('dict'))
 		}
 		r.readAsText(file)
@@ -29,13 +29,15 @@ function parseXML(xml) {
 	var raw = xml.children('dict').children('dict')
 	full = $.makeArray(raw.map(function(i, d) {
 		var obj = {};
-		$(d).find('key').each(function() {
-			var val = $(this).next().text();
-			if (!isNaN(val)) {
-				val = parseInt(val);
+		$(d).find('key').each(function(i, d) {
+			if (fields.indexOf($(this).text()) != -1) {
+				var val = $(this).next().text();
+				if (!isNaN(val)) {
+					val = parseInt(val);
+				}
+				obj[$(this).text()] = val;
 			}
-			obj[$(this).text()] = val;
-		})
+		});
 		return obj;
 	}));
 	createTopSongs();
@@ -47,7 +49,6 @@ function createTopSongs() {
 	d3.select('#topSongs').select('svg').remove();
 	// Adjust default parameters
 	margin.left = 10;
-	margin.top = 50;
 	var z = 'Play Count';
 	
 	// Create SVG
@@ -178,4 +179,21 @@ function getTextSize(text) {
 	var size = $('#test-text').width();
 	t.remove();
 	return size;
+}
+
+// Compresses full data
+function compress(arr) {
+	var fields = $.unique(arr.reduce(function(a, cur) { return a.concat(Object.keys(cur)); }, []));
+	return arr.reduce(function(a, cur) { a.push(fields.map(function(f) { return cur[f]; })); return a; }, [fields]);
+}
+
+// Decompresses full data
+function decompress(arr) {
+	var fields = arr[0];
+	return arr.splice(1).reduce(function(a, cur) { var obj = {}; fields.forEach(function(d, i) { obj[d] = cur[i]; }); a.push(obj); return a; }, [])
+}
+
+// Calculates number of bytes in a string
+function byteCount(s) {
+    return encodeURI(s).split(/%..|./).length - 1;
 }
