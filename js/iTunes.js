@@ -4,10 +4,23 @@ var full, width, margin = {left: 20, right: 40, top: 50, bottom: 20},
 
 $(function() {
 	width = $('#topSongs').width();
+	var stored = window.localStorage['full-data'];
+	if (stored) {
+		full = decompress(JSON.parse(stored));
+		createAll();
+	} else {
+		reset()
+	}
+});
+
+/**
+ * Resets data to default data.
+ */
+function reset() {
 	$.get( "./data/Library.xml", function(data) {
-		parseXML($(data).children('plist').children('dict'))
+		parseXML($(data).children('plist').children('dict'));
 	});
-})
+}
 
 function upload() {
 	var file = $('#file').get(0).files[0];
@@ -23,7 +36,10 @@ function upload() {
 	}
 }
 
-// Parses xml and creates full data
+/**
+ * Parses xml and creates full data.
+ * @param xml - XML document containing track data
+ */
 function parseXML(xml) {
 	var date = new Date(xml.children('date').text());
 	var raw = xml.children('dict').children('dict')
@@ -40,6 +56,14 @@ function parseXML(xml) {
 		});
 		return obj;
 	}));
+	window.localStorage['full-data'] = JSON.stringify(compress(full));
+	createAll();
+}
+
+/**
+ * Creates all visualizations
+ */
+function createAll() {
 	createTopSongs();
 }
 
@@ -191,7 +215,7 @@ function getTextSize(text) {
 	var t = d3.select('svg').append('text').attr('id', 'test-text').text(text);
 	var size = $('#test-text').width();
 	t.remove();
-	return size;
+	return size + 5;
 }
 
 // Compresses full data
