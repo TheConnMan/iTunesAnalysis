@@ -54,7 +54,6 @@ function createTopSongs() {
 	// Create SVG
 	var svg = d3.select('#topSongs').append('svg')
 		.attr('width', width).attr('height', height);
-	var colors = d3.scale.category10().domain(d3.range(5));
 	
 	// Initialize genre data
 	var genres = [];
@@ -66,32 +65,10 @@ function createTopSongs() {
 		};
 		return all;
 	}, {}), function(k, v) {
-		genres.push({name: k, count: v});
+		genres.push({name: k, val: v});
 	});
 	
-	// Find genre text sizes
-	var total = width;
-	genres = genres.sort(function(a, b) { return b.count - a.count; }).slice(0, Math.min(10, genres.length)).reverse().map(function(d, i) {
-		var w = getTextSize(d.name);
-		total -= w + 4 * pad;
-		return {count: d.count, name: d.name, color: colors(i), w: w + 2 * pad, x: total};
-	});
-	svg.append('text').attr('transform', 'translate(' + (total - 10) + ',30)').text('Top Genres').style('font-size', '22px').style('text-anchor', 'end')
-	
-	// Create genre text so size can be measured
-	var genreLegend = svg.selectAll('topSong-genre').data(genres).enter().append('g').attr('class', 'topSong-genre').on('click', function(d) {
-		filter(d, d3.select(this));
-	});
-	// Create genre rectangles and text
-	genreLegend.data(genres).append('rect')
-		.attr('width', function(d) { return d.w; })
-		.attr('height', 30)
-		.attr('transform', function(d) { return 'translate(' + d.x + ',10)'; })
-		.attr('rx', pad).attr('ry', pad)
-		.style('stroke', function(d) { return d.color; });
-	genreLegend.append('text')
-		.attr('transform', function(d) { return 'translate(' + (d.x + d.w / 2) + ',30)'; })
-		.text(function(d) { return d.name; });
+	genres = createLegend(genres, svg, 'Top Genres', filter);
 	
 	refresh([])
 	
@@ -171,6 +148,42 @@ function createTopSongs() {
 		var c = $.grep(genres, function(g) { return g.name == d.data['Genre']; });
 		return c.length != 0 ? c[0].color : 'black';
 	}
+}
+
+/**
+ * Creates legend items at attaches an on click function.
+ * @param data - Array of objects containing name and val, val used to sort
+ * @param svg - Current SVG
+ * @param label - Legend title
+ * @param fn - Function to be executed on click, inputs are clicked item and this
+ * @returns Updated data array
+ */
+function createLegend(data, svg, label, fn) {
+	var colors = d3.scale.category10();
+	// Find genre text sizes
+	var total = svg.attr('width');
+	data = data.sort(function(a, b) { return b.val - a.val; }).slice(0, Math.min(10, data.length)).reverse().map(function(d, i) {
+		var w = getTextSize(d.name);
+		total -= w + 4 * pad;
+		return {val: d.val, name: d.name, color: colors(i), w: w + 2 * pad, x: total};
+	});
+	svg.append('text').attr('transform', 'translate(' + (total - 10) + ',30)').text(label).style('font-size', '22px').style('text-anchor', 'end')
+	
+	// Create genre text so size can be measured
+	var legends = svg.selectAll('legend').data(data).enter().append('g').attr('class', 'legend').on('click', function(d) {
+		fn(d, d3.select(this));
+	});
+	// Create genre rectangles and text
+	legends.data(data).append('rect')
+		.attr('width', function(d) { return d.w; })
+		.attr('height', 30)
+		.attr('transform', function(d) { return 'translate(' + d.x + ',10)'; })
+		.attr('rx', pad).attr('ry', pad)
+		.style('stroke', function(d) { return d.color; });
+	legends.append('text')
+		.attr('transform', function(d) { return 'translate(' + (d.x + d.w / 2) + ',30)'; })
+		.text(function(d) { return d.name; });
+	return data;
 }
 
 // Finds the true size of text when rendered

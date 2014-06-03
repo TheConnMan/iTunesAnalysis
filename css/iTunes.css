@@ -14,16 +14,16 @@ text {
 	width: 100%;
 }
 
-.topSong-genre rect {
+.legend {
+	cursor: pointer;
+}
+
+.legend rect {
 	stroke-width: 3;
 	fill: none;
 }
 
-.topSong-genre {
-	cursor: pointer;
-}
-
-.topSong-genre text {
+.legend text {
 	text-anchor: middle;
 	cursor: pointer !important;
 }
