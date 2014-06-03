@@ -1,9 +1,9 @@
 var full, width, margin = {left: 20, right: 40, top: 50, bottom: 20},
-	height = 800, pad = 5, delay = 1500,
+	height = 600, pad = 5, delay = 1500,
 	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating'];
 
 $(function() {
-	width = $('#topSongs').width();
+	width = $('.svg').width();
 	var stored = window.localStorage['full-data'];
 	if (stored) {
 		full = decompress(JSON.parse(stored));
@@ -64,19 +64,20 @@ function parseXML(xml) {
  * Creates all visualizations
  */
 function createAll() {
-	createTopSongs();
+	createTop('Play');
+	createTop('Skip');
 }
 
-// Creates top songs chart
-function createTopSongs() {
+// Creates top chart
+function createTop(metric) {
 	// Remove old svg
-	d3.select('#topSongs').select('svg').remove();
+	d3.select('#top' + metric).select('svg').remove();
 	// Adjust default parameters
 	margin.left = 10;
-	var z = 'Play Count';
+	var z = metric + ' Count';
 	
 	// Create SVG
-	var svg = d3.select('#topSongs').append('svg')
+	var svg = d3.select('#top' + metric).append('svg')
 		.attr('width', width).attr('height', height);
 	
 	// Initialize genre data
@@ -131,7 +132,7 @@ function createTopSongs() {
 			var nameText = svg.selectAll('.topSong-name').data(data).enter()
 				.append('text')
 				.attr('class', 'topSong-name')
-				.attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 15) + ')'; })
+				.attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 0)
 				.text(function(d) { return d.name; });
 			var rects = svg.selectAll('.topSong-data').data(data).enter()
@@ -144,13 +145,13 @@ function createTopSongs() {
 			var countText = svg.selectAll('.topSong-count').data(data).enter()
 				.append('text')
 				.attr('class', 'topSong-count')
-				.attr('transform', function(d) { return 'translate(' + (x0 + 5) + ',' + (d.y + 15) + ')'; })
+				.attr('transform', function(d) { return 'translate(' + (x0 + 5) + ',' + (d.y + 12) + ')'; })
 				.text(function(d) { return d.data[z]; });
 			
 			// Transitions
 			svg.selectAll('.topSong-data').transition().duration(delay).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
 				.attr('width', function(d) { return scale(d.data[z]); }).style('fill', function(d) { return getColor(d, genres); })
-			svg.selectAll('.topSong-name').transition().duration(delay).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 15) + ')'; })
+			svg.selectAll('.topSong-name').transition().duration(delay).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
 			svg.selectAll('.topSong-count').transition().duration(delay).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
 		}, svg.selectAll('.topSong-data')[0].length == 0 ? 0 : delay);
@@ -160,10 +161,10 @@ function createTopSongs() {
 	function getData(selected) {
 		var filtered = full.filter(function(d) { return selected.length == 0 || selected.indexOf(d['Genre']) != -1; })
 		var raw = filtered.sort(function(a, b) { return (b[z] ? b[z] : 0) - (a[z] ? a[z] : 0); }).slice(0, Math.min(filtered.length, 25));
-		var h = (height - margin.top - margin.bottom) / raw.length - 2 * pad;
+		var h = (height - margin.top - margin.bottom) / raw.length -  pad;
 		return raw.map(function(d, i) {
 			var c = d[z];
-			return {data: d, y: (h + 2 * pad) * i + pad + margin.top, h: h, name: d['Name'] + ' - ' + d['Artist']};
+			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: d['Name'] + ' - ' + d['Artist']};
 		});
 	}
 	
