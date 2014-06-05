@@ -1,4 +1,4 @@
-var full, width,
+var full, width, transitioning = false,
 	height = 600, pad = 5, delay = 1500,
 	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating'];
 
@@ -102,7 +102,7 @@ function createTop(z, id) {
 		svg.selectAll('.top-data').data(data).exit().remove();
 		svg.selectAll('.top-count').data(data).exit().remove();
 		
-		svg.selectAll('.top-name, .top-count').transition().duration(delay).style('opacity', 0);
+		svg.selectAll('.top-name, .top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 0);
 		
 		setTimeout(function() {
 			var nameText = svg.selectAll('.top-name').data(data).enter()
@@ -125,11 +125,12 @@ function createTop(z, id) {
 				.text(function(d) { return d.data[z]; });
 			
 			// Transitions
-			svg.selectAll('.top-data').transition().duration(delay).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
+			svg.selectAll('.top-data').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
 				.attr('width', function(d) { return scale(d.data[z]); }).style('fill', function(d) { return getColor(d, genres); })
-			svg.selectAll('.top-name').transition().duration(delay).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
+			svg.selectAll('.top-name').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
-			svg.selectAll('.top-count').transition().duration(delay).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
+			svg.selectAll('.top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
+			transitioning = false;
 		}, svg.selectAll('.top-data')[0].length == 0 ? 0 : delay);
 	}
 	
@@ -187,7 +188,8 @@ function createDistribution(z, id, bucket, fn) {
 		.text("Count");
 	
 	// Initialize legend data
-	createLegend(full.slice(0), 'Genre', svg, 'Top Genres', refresh);
+	var legend = createLegend(full.slice(0), 'Genre', svg, 'Top Genres', refresh);
+	legend.push({color: 'black', val: 0, name: 'Other'});
 	
 	refresh([])
 	
@@ -200,7 +202,9 @@ function createDistribution(z, id, bucket, fn) {
 		// Create bars and count text
 		var keyMax = d3.max(data, function(d) { return d.key; });
 		var scaleX = d3.scale.linear().domain([0, keyMax - keyMax % bucket + bucket]).range([0, width - margin.left - margin.right]);
-		var scaleY = d3.scale.linear().domain([0, d3.max(data, function(d) { return d.val; })]).range([height - margin.bottom - margin.top, 0]);
+		var scaleY = d3.scale.linear().domain([0, d3.max(data, function(d) {
+			return Object.keys(d.val).reduce(function(a, cur) { return a + parseInt(d.val[cur].count); }, 0);
+		})]).range([height - margin.bottom - margin.top, 0]);
 		
 		var xAxis = d3.svg.axis()
 		    .scale(scaleX)
@@ -210,20 +214,37 @@ function createDistribution(z, id, bucket, fn) {
 		    .scale(scaleY)
 		    .orient("left");
 		
-		svg.selectAll('.dist-data').data(data).exit().remove();
-		var rects = svg.selectAll('.dist-data').data(data).enter()
-			.append('rect')
-			.attr('class', 'dist-data')
-			.attr('width', function(d) { return d.w; })
+		svg.selectAll('.dist-data').data([]).exit().transition().duration(delay)
 			.attr('height', 0)
-			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.key)) + ',' + (height - margin.bottom) + ')'; })
-			.style('fill', function(d, i) { return colors(i); });
+			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.key)) + ',' + (height - margin.bottom) + ')'; }).remove();
+		data.forEach(function(e, i) {
+			var vals = Object.keys(e.val).map(function(d) { return {name: d, color: e.val[d].color, count: e.val[d].count, sort: e.val[d].sort}; })
+						.sort(function(a, b) { return b.sort - a.sort; });
+			var total = 0;
+			vals.forEach(function(d) {
+				d.start = total;
+				total += d.count;
+				d.key = e.key;
+			});
+			setTimeout(function() {
+				var rects = svg.selectAll('.dist-data .bucket' + e.key).data(vals).enter()
+					.append('rect')
+					.attr('class', 'dist-data bucket' + e.key)
+					.attr('width', function(d) { return e.w; })
+					.attr('height', 0)
+					.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(e.key)) + ',' + (height - margin.bottom) + ')'; })
+					.style('fill', function(d, i) { return d.color; });
+				
+				// Transitions
+				svg.selectAll('.dist-data.bucket' + e.key).transition().duration(delay).delay(function(d, i) { return 10 * i; })
+					.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(e.key)) + ',' + (scaleY(d.start + d.count) + margin.top) + ')'; })
+					.attr('height', function(d) { return height - margin.bottom - margin.top - scaleY(d.count); })
+					.attr('width', function(d) { return e.w; });
+				transitioning = false;
+			}, delay * 1.5)
+		});
 		
-		// Transitions
-		svg.selectAll('.dist-data').transition().duration(delay)
-			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.key)) + ',' + (scaleY(d.val) + margin.top) + ')'; })
-			.attr('height', function(d) { return height - margin.bottom - margin.top - scaleY(d.val); })
-			.attr('width', function(d) { return d.w; });
+		
 
 		xAxisEl.transition().duration(delay).call(xAxis);
 		yAxisEl.transition().duration(delay).call(yAxis);
@@ -239,7 +260,7 @@ function createDistribution(z, id, bucket, fn) {
 			}
 			d['Temp'] -= d['Temp'] % bucket;
 		});
-		var raw = aggregateMetric(filtered, 'Temp');
+		var raw = aggregateMetricLegend(filtered, 'Temp', legend, 'Genre');
 		var max = d3.max(raw, function(d) { return parseInt(d.name); });
 		var w = (width - margin.left - margin.right) / max;
 		return raw.map(function(d, i) {
@@ -277,19 +298,22 @@ function createLegend(full, metric, svg, label, fn) {
 	
 	// Create genre text so size can be measured
 	var legends = svg.selectAll('legend').data(data).enter().append('g').attr('class', 'legend').on('click', function(d) {
-		var me = d3.select(this);
-		var classes = me.attr('class').split(' ');
-		if (classes.length == 1) {
-			me.select('rect').style('fill', d.color);
-			me.select('text').style('fill', 'white');
-			me.attr('class', classes[0] + ' selected');
-		} else {
-			me.select('rect').style('fill', 'none');
-			me.select('text').style('fill', '#555555');
-			me.attr('class', classes[0]);
+		if (!transitioning) {
+			transitioning = true;
+			var me = d3.select(this);
+			var classes = me.attr('class').split(' ');
+			if (classes.length == 1) {
+				me.select('rect').style('fill', d.color);
+				me.select('text').style('fill', 'white');
+				me.attr('class', classes[0] + ' selected');
+			} else {
+				me.select('rect').style('fill', 'none');
+				me.select('text').style('fill', '#555555');
+				me.attr('class', classes[0]);
+			}
+			var selected = svg.selectAll('.selected')[0].map(function(d) { return d3.select(d).select('text').text(); });
+			fn(selected);
 		}
-		var selected = svg.selectAll('.selected')[0].map(function(d) { return d3.select(d).select('text').text(); });
-		fn(selected);
 	});
 	// Create genre rectangles and text
 	legends.data(data).append('rect')
@@ -317,6 +341,42 @@ function aggregateMetric(full, metric) {
 			all[cur[metric]]++;
 		} else if(cur[metric]) {
 			all[cur[metric]] = 1;
+		};
+		return all;
+	}, {}), function(k, v) {
+		data.push({name: k, val: v});
+	});
+	return data;
+}
+
+/**
+ * Aggregates a metric
+ * @param all - Array of data to be aggregated
+ * @param metric - Metric to be counted
+ * @param legend - Legend items to aggregate into
+ * @param filter - Metric used to generate legend
+ * @returns {Array} Array of objects with name of metric value and count
+ */
+function aggregateMetricLegend(full, metric, legend, filter) {
+	var data = [];
+	$.each(full.reduce(function(all, cur) {
+		if (all[cur[metric]]) {
+			if (all[cur[metric]][cur[filter]]) {
+				all[cur[metric]][cur[filter]].count++;
+			} else {
+				all[cur[metric]]['Other'].count++;
+			}
+		} else if(cur[metric]) {
+			var base = {};
+			legend.forEach(function(d) {
+				base[d.name] = {color: d.color, count: 0, sort: d.val};
+			});
+			if (base[cur[filter]]) {
+				base[cur[filter]].count = 1;
+			} else {
+				base['Other'].count = 1;
+			}
+			all[cur[metric]] = base;
 		};
 		return all;
 	}, {}), function(k, v) {
