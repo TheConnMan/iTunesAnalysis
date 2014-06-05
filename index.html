@@ -33,6 +33,16 @@
 				<p>
 					Upload your <b>iTunes Music Library.xml</b> file located in your iTunes music folder to begin analysis.
 				</p>
+				<h2>Motivation</h2>
+				<p>
+					I love analytics. Sometimes I search for data sets just so I can perform some analytics on them. I've been especially excited about
+					analytics since I was introduced to the <a href="http://d3js.org">D3</a> JavaScript library because I've wanted to use it to create
+					interesting and interactive visualizations.
+				</p>
+				<p>
+					I also love music. I use iTunes fairly religiously and make sure to rate songs and fill in as much information about them as I can.
+					I even make sure to not skip songs which are almost over so the play count is increased.
+				</p>
 				<h2>Top 25 Songs</h2>
 				<p>
 					 Below are the top 25 songs in your library as well as the top 10 genres. Click on a genre to filter by it and see the new top 25.
@@ -44,6 +54,25 @@
 					 Now let's take a quick look at the most skipped songs. Can't say I'm surprised by that first one...
 				</p>
 				<div id="topSkip" class="svg"></div>
+				<h2>Play Count Distribution</h2>
+				<p>
+					 At first glance this graph isn't terribly interesting. Who's surprised that I haven't listened to a large portion of my library more than
+					 five times? Not I. The data becomes more interesting through some filtering, though. It looks like I'm more selective in adding Electronic
+					 and Hip-Hop music, leading to fewer songs I don't really listen to.
+				</p>
+				<div id="playDistribution" class="svg"></div>
+				<h2>Song Length Distribution</h2>
+				<p>
+					 Here we explore the song length distribution. It looks fairly <a href="http://en.wikipedia.org/wiki/Poisson_distribution">Poisson</a>
+					 for those interested in statistics. For the rest of you, that song on the far right is the entire soundtrack from
+					 <a href="http://en.wikipedia.org/wiki/Age_of_Empires_II:_The_Conquerors#Soundtrack">Age of Empires II: The Conquerors</a>. What a classic.
+				</p>
+				<p>
+					 Again, some interesting conclusions fall out of filtering. The median Pop song in my library is around 3:15 long while the median Alternative
+					 song comes in about a half minute longer. I was expecting Classic Rock songs to average out around 4:30, but the distribution fell short. I'm
+					 not surprised there were a few long outliers. I bet that can be attributed to The Eagles and Meat Loaf.
+				</p>
+				<div id="timeDistribution" class="svg"></div>
 			</div>
 			<div id="footer">
 				Created by Brian Conn. Contact me at <a href="mailto:brian@theconnman.com">brian@theconnman.com</a>.

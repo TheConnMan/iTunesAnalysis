@@ -10,6 +10,16 @@ text {
 	max-width: 1400px;
 }
 
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
 .svg {
 	width: 100%;
 }
@@ -28,6 +38,6 @@ text {
 	cursor: pointer !important;
 }
 
-.topSong-name {
+.top-name {
 	text-anchor: end;
 }
