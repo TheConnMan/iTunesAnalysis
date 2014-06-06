@@ -1,5 +1,5 @@
 var full, width, transitioning = false,
-	height = 600, pad = 5, delay = 1500,
+	height = 600, pad = 5, delay = 100,
 	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating'];
 
 $(function() {
@@ -64,18 +64,23 @@ function parseXML(xml) {
  * Creates all visualizations
  */
 function createAll() {
-	createTop('Play Count', '#topPlay');
-	createTop('Skip Count', '#topSkip');
-	createDistribution('Play Count', '#playDistribution', 5);
-	createDistribution('Total Time', '#timeDistribution', 10, function(d) { return d / 1000; });
+	createTop('Play Count', '#topPlay', 'Genre', 'Top Genres', ['Name', 'Artist']);
+	createTop('Skip Count', '#topSkip', 'Genre', 'Top Genres', ['Name', 'Artist']);
+	createDistribution('Play Count', '#playDistribution', 'Genre', 'Top Genres', 5);
+	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
+	createTop('Play Count', '#topArtist', 'Artist', 'Top Artists', ['Name']);
+	createTop('Skip Count', '#topSkippedArtist', 'Artist', 'Top Artists', ['Name']);
 }
 
 /**
  * Creates a top graph.
  * @param z - Metric
  * @param id - Id of chart container
+ * @param legendMetric - Metric used to create the legend
+ * @param legendTitle - Title for the legend
+ * @param textArray - Array of fields to concatenate into a label
  */
-function createTop(z, id) {
+function createTop(z, id, legendMetric, legendTitle, textArray) {
 	var margin = {left: 20, right: 40, top: 50, bottom: 20};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
@@ -85,7 +90,7 @@ function createTop(z, id) {
 		.attr('width', width).attr('height', height);
 	
 	// Initialize genre data
-	var genres = createLegend(full.slice(0), 'Genre', svg, 'Top Genres', refresh);
+	var legend = createLegend(full.slice(0), legendMetric, svg, legendTitle, z, refresh);
 	
 	refresh([])
 	
@@ -117,7 +122,7 @@ function createTop(z, id) {
 				.attr('width', 0)
 				.attr('height', function(d) { return d.h; })
 				.attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
-				.style('fill', function(d) { return getColor(d, genres); });
+				.style('fill', function(d) { return getColor(d, legend); });
 			var countText = svg.selectAll('.top-count').data(data).enter()
 				.append('text')
 				.attr('class', 'top-count')
@@ -126,7 +131,7 @@ function createTop(z, id) {
 			
 			// Transitions
 			svg.selectAll('.top-data').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
-				.attr('width', function(d) { return scale(d.data[z]); }).style('fill', function(d) { return getColor(d, genres); })
+				.attr('width', function(d) { return scale(d.data[z]); }).style('fill', function(d) { return getColor(d, legend); })
 			svg.selectAll('.top-name').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
 			svg.selectAll('.top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
@@ -136,18 +141,18 @@ function createTop(z, id) {
 	
 	// Filters down to top songs
 	function getData(selected) {
-		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(d['Genre']) != -1; });
+		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
 		var raw = filtered.sort(function(a, b) { return (b[z] ? b[z] : 0) - (a[z] ? a[z] : 0); }).slice(0, Math.min(filtered.length, 25));
 		var h = (height - margin.top - margin.bottom) / raw.length -  pad;
 		return raw.map(function(d, i) {
 			var c = d[z];
-			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: d['Name'] + ' - ' + d['Artist']};
+			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: textArray.map(function(e) { return d[e]; }).join(' - ')};
 		});
 	}
 	
 	// Get bar color
 	function getColor(d, genres) {
-		var c = $.grep(genres, function(g) { return g.name == d.data['Genre']; });
+		var c = $.grep(genres, function(g) { return g.name == d.data[legendMetric]; });
 		return c.length != 0 ? c[0].color : 'black';
 	}
 }
@@ -156,10 +161,12 @@ function createTop(z, id) {
  * Creates a distribution graph.
  * @param z - Metric
  * @param id - Id of chart container
+ * @param legendMetric - Metric used to create the legend
+ * @param legendTitle - Title for the legend
  * @param bucket - Bucket size
  * @param fn - Optional function to preprocess metric data
  */
-function createDistribution(z, id, bucket, fn) {
+function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	var margin = {left: 55, right: 20, top: 50, bottom: 40};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
@@ -188,7 +195,7 @@ function createDistribution(z, id, bucket, fn) {
 		.text("Count");
 	
 	// Initialize legend data
-	var legend = createLegend(full.slice(0), 'Genre', svg, 'Top Genres', refresh);
+	var legend = createLegend(full.slice(0), legendMetric, svg, legendTitle, z, refresh);
 	legend.push({color: 'black', val: 0, name: 'Other'});
 	
 	refresh([])
@@ -284,8 +291,8 @@ function createDistribution(z, id, bucket, fn) {
  * @param fn - Function to be executed on click, input is an array of the currently selected legend items
  * @returns Updated data array
  */
-function createLegend(full, metric, svg, label, fn) {
-	var data = aggregateMetric(full, metric);
+function createLegend(full, metric, svg, label, counter, fn) {
+	var data = aggregateMetric(full, metric, counter);
 	var colors = d3.scale.category10();
 	// Find genre text sizes
 	var total = svg.attr('width');
@@ -334,13 +341,13 @@ function createLegend(full, metric, svg, label, fn) {
  * @param metric - Metric to be counted
  * @returns {Array} Array of objects with name of metric value and count
  */
-function aggregateMetric(full, metric) {
+function aggregateMetric(full, metric, counter) {
 	var data = [];
 	$.each(full.reduce(function(all, cur) {
 		if (all[cur[metric]]) {
-			all[cur[metric]]++;
+			all[cur[metric]] += cur[counter];
 		} else if(cur[metric]) {
-			all[cur[metric]] = 1;
+			all[cur[metric]] = cur[counter];
 		};
 		return all;
 	}, {}), function(k, v) {
