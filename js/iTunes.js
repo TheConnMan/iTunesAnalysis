@@ -1,6 +1,6 @@
 var full, width, transitioning = false,
 	height = 600, pad = 5, delay = 100,
-	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating'];
+	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating', 'Kind'];
 
 $(function() {
 	width = $('.svg').width();
@@ -18,6 +18,7 @@ $(function() {
  */
 function reset() {
 	$.get( "./data/Library.xml", function(data) {
+		console.log(data)
 		parseXML($(data).children('plist').children('dict'));
 	});
 }
@@ -41,7 +42,6 @@ function upload() {
  * @param xml - XML document containing track data
  */
 function parseXML(xml) {
-	var date = new Date(xml.children('date').text());
 	var raw = xml.children('dict').children('dict')
 	full = $.makeArray(raw.map(function(i, d) {
 		var obj = {};
@@ -55,7 +55,7 @@ function parseXML(xml) {
 			}
 		});
 		return obj;
-	}));
+	})).filter(function(d) { return d['Kind'].indexOf('audio') != -1; });
 	window.localStorage['full-data'] = JSON.stringify(compress(full));
 	createAll();
 }
@@ -69,7 +69,7 @@ function createAll() {
 	createDistribution('Play Count', '#playDistribution', 'Genre', 'Top Genres', 5);
 	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
 	createTop('Play Count', '#topArtist', 'Artist', 'Top Artists', ['Name']);
-	createTop('Skip Count', '#topSkippedArtist', 'Artist', 'Top Artists', ['Name']);
+	createCalendar('Play Date UTC', '#lastGenre', 'Genre', 'Top Genres');
 }
 
 /**
@@ -192,7 +192,7 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 		.attr("y", 6)
 		.attr("dy", 10 - margin.left)
 		.style("text-anchor", "end")
-		.text("Count");
+		.text("Song Count");
 	
 	// Initialize legend data
 	var legend = createLegend(full.slice(0), legendMetric, svg, legendTitle, z, refresh);
@@ -279,6 +279,115 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	function getColor(d, genres) {
 		var c = $.grep(genres, function(g) { return g.name == d.data['Genre']; });
 		return c.length != 0 ? c[0].color : 'black';
+	}
+}
+
+/**
+ * Creates a calendar view based on a date metric
+ * @param z - Metric
+ * @param id - Id of chart container
+ * @param legendMetric - Metric used to create the legend
+ * @param legendTitle - Title for the legend
+ */
+function createCalendar(z, id, legendMetric, legendTitle) {
+	var margin = {left: 20, right: 40, top: 50, bottom: 20}, cellSize = 16, height = 136;
+	// Remove old svg
+	d3.select(id).selectAll('svg').remove();
+	
+	// Create SVG
+	var svg = d3.select(id).append('svg')
+		.attr('width', width).attr('height', margin.top);
+	
+	// Initialize genre data
+	var legend = createLegend(full.slice(0), legendMetric, svg, legendTitle, 'Play Count', refresh);
+	
+	// Initialize top song data
+	var data = getData([]);
+	var years = d3.extent(Object.keys(data), function(d) { return parseInt(d.substring(0, 4)); });
+	
+	var day = d3.time.format("%w"),
+		week = d3.time.format("%U"),
+		format = d3.time.format("%Y-%m-%d");
+	
+	var svg = d3.select(id).selectAll("svg")
+		.data(d3.range(years[0], years[1] + 1))
+		.enter().append("svg")
+		.attr("width", width)
+		.attr("height", height)
+		.attr("class", "RdYlGn")
+		.append("g")
+		.attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
+	
+	svg.append("text")
+		.attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
+		.style("text-anchor", "middle")
+		.text(function(d) { return d; });
+	
+	var rect = svg.selectAll(".day")
+		.data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+		.enter().append("rect")
+		.attr("class", "day")
+		.attr("width", cellSize)
+		.attr("height", cellSize)
+		.attr("x", function(d) { return week(d) * cellSize; })
+		.attr("y", function(d) { return day(d) * cellSize; })
+		.datum(format);
+	
+	rect.append("title")
+		.text(function(d) { return d; });
+	
+	svg.selectAll(".month")
+		.data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+		.enter().append("path")
+		.attr("class", "month")
+		.attr("d", monthPath);
+	
+	refresh([])
+	
+	// Refreshes data
+	function refresh(selected) {
+		// Initialize top song data
+		var data = getData(selected);
+	
+		var color = d3.scale.quantize()
+			.domain([0, d3.max(Object.keys(data), function(d) { return data[d]; })])
+			.range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
+		
+		svg.selectAll(".day").data([]).exit().attr('class', 'day').select("title")
+			.text(function(d) { return d; });
+				
+		rect.filter(function(d) { return d in data; })
+			.attr("class", function(d) { return "day " + color(data[d]); })
+			.select("title")
+			.text(function(d) { return d + ": " + data[d] + ' Song' + (data[d] != 1 ? 's' : ''); });
+		transitioning = false;
+	}
+	
+	function monthPath(t0) {
+		var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+			d0 = +day(t0), w0 = +week(t0),
+			d1 = +day(t1), w1 = +week(t1);
+		return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
+			+ "H" + w0 * cellSize + "V" + 7 * cellSize
+			+ "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
+			+ "H" + (w1 + 1) * cellSize + "V" + 0
+			+ "H" + (w0 + 1) * cellSize + "Z";
+	}
+	
+	// Filters down to top songs
+	function getData(selected) {
+		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
+		var raw = {};
+		filtered.filter(function(d) { return d[z]; }).forEach(function(d) {
+			var date = new Date(d[z]);
+			date = [date.getFullYear(), (date.getMonth() < 9 ? '0' : '') + (date.getMonth() + 1), (date.getDate() < 10 ? '0' : '') + date.getDate()].join('-');
+			if (raw[date]) {
+				raw[date]++;
+			} else {
+				raw[date] = 1;
+			}
+		});
+		return raw;
 	}
 }
 
