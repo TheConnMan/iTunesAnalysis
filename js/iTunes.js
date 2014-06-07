@@ -69,6 +69,7 @@ function createAll() {
 	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
 	createTop('Play Count', '#topArtist', 'Artist', 'Top Artists', ['Name']);
 	createCalendar('Play Date UTC', '#lastGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
+	createCalendar('Date Added', '#addedGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
 }
 
 /**
