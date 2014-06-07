@@ -48,6 +48,11 @@ text {
   stroke: #ccc;
 }
 
+#focus {
+	stroke: black;
+	stroke-width: 2;
+}
+
 .month {
   fill: none;
   stroke: #000;
