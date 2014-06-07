@@ -295,7 +295,7 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 	// Remove old svg
 	d3.select(id).selectAll('svg').remove();
 	
-	// Initialize top song data
+	// Initialize calendar data
 	var data = getData([]);
 	var years = d3.extent(Object.keys(data), function(d) { return parseInt(d.substring(0, 4)); });
 	
@@ -303,7 +303,7 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 	var mainSvg = d3.select(id).append('svg')
 		.attr('width', width).attr('height', margin.top + margin.bottom + height * (years[1] - years[0] + 1));
 	
-	// Initialize genre data
+	// Initialize legend data
 	var legend = createLegend(full.slice(0), legendMetric, mainSvg, legendTitle, 'Play Count', refresh);
 	
 	var day = d3.time.format("%w"),
@@ -353,7 +353,7 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 	
 	// Refreshes data
 	function refresh(selected) {
-		// Initialize top song data
+		// Initialize calendar data
 		var data = getData(selected);
 		var max = d3.max(Object.keys(data), function(d) { return data[d]; });
 		var color = d3.scale.linear()
@@ -367,11 +367,12 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 			.style("fill", function(d) { return color(data[d]); })
 			.select("title")
 			.text(function(d) { return d + ": " + data[d] + ' Song' + (data[d] != 1 ? 's' : ''); });
+		
 		rect.on('click', function(d) {
-			svg.select('#focus').attr('id', '');
+			$('#focus').removeAttr('id');
 			d3.select(this).attr('id', 'focus');
 			focusDate.text(d);
-			var old = full.filter(function(e) { return formatDate(new Date(e[z])) == d && (selected.length == 0 || selected.indexOf(e[legendMetric]) != -1); })
+			var old = full.slice(0).filter(function(e) { return format(new Date(e[z])) == d && (selected.length == 0 || selected.indexOf(e[legendMetric]) != -1); })
 				.sort(function(e, f) { return f['Play Count'] - e['Play Count']; });
 			old = old.slice(0, Math.min(old.length, Math.round((height * (years[1] - years[0] + 1) - 60) / lineHeight)))
 			focusResults.selectAll('text').data(old).exit().remove();
@@ -393,17 +394,13 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 			+ "H" + (w0 + 1) * cellSize + "Z";
 	}
 	
-	function createFocusArea(id) {
-		
-	}
-	
-	// Filters down to top songs
+	// Filters down to filtered data
 	function getData(selected) {
+		var format = d3.time.format("%Y-%m-%d");
 		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
 		var raw = {};
 		filtered.filter(function(d) { return d[z]; }).forEach(function(d) {
-			var date = new Date(d[z]);
-			date = formatDate(date);
+			var date = format(new Date(d[z]));
 			if (raw[date]) {
 				raw[date]++;
 			} else {
@@ -411,10 +408,6 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 			}
 		});
 		return raw;
-	}
-	
-	function formatDate(date) {
-		return [date.getFullYear(), (date.getMonth() < 9 ? '0' : '') + (date.getMonth() + 1), (date.getDate() < 10 ? '0' : '') + date.getDate()].join('-');
 	}
 }
 
