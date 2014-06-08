@@ -66,7 +66,9 @@ function createAll() {
 	createTop('Play Count', '#topPlay', 'Genre', 'Top Genres', ['Name', 'Artist']);
 	createTop('Skip Count', '#topSkip', 'Genre', 'Top Genres', ['Name', 'Artist']);
 	createDistribution('Play Count', '#playDistribution', 'Genre', 'Top Genres', 5);
+	createDistribution('Rating', '#ratingDistribution', 'Genre', 'Top Genres', 1, function(d) { return d / 20 + 1; });
 	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
+	createDistribution('Rating', '#artistRatingDistribution', 'Artist', 'Top Artists', 1, function(d) { return d / 20 + 1; });
 	createTop('Play Count', '#topArtist', 'Artist', 'Top Artists', ['Name']);
 	createCalendar('Play Date UTC', '#lastGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
 	createCalendar('Date Added', '#addedGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
@@ -190,7 +192,7 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	yAxisEl.append("text")
 		.attr("transform", "rotate(-90)")
 		.attr("y", 6)
-		.attr("dy", 10 - margin.left)
+		.attr("dy", 5 - margin.left)
 		.style("text-anchor", "end")
 		.text("Song Count");
 	
@@ -267,7 +269,7 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 			}
 			d['Temp'] -= d['Temp'] % bucket;
 		});
-		var raw = aggregateMetricLegend(filtered, 'Temp', legend, 'Genre');
+		var raw = aggregateMetricLegend(filtered, 'Temp', legend, legendMetric);
 		var max = d3.max(raw, function(d) { return parseInt(d.name); });
 		var w = (width - margin.left - margin.right) / max;
 		return raw.map(function(d, i) {
