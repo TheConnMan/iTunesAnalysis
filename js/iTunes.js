@@ -66,9 +66,9 @@ function createAll() {
 	createTop('Play Count', '#topPlay', 'Genre', 'Top Genres', ['Name', 'Artist']);
 	createTop('Skip Count', '#topSkip', 'Genre', 'Top Genres', ['Name', 'Artist']);
 	createDistribution('Play Count', '#playDistribution', 'Genre', 'Top Genres', 5);
-	createDistribution('Rating', '#ratingDistribution', 'Genre', 'Top Genres', 1, function(d) { return d / 20 + 1; });
+	createDistribution('Rating', '#ratingDistribution', 'Genre', 'Top Genres', 1, function(d) { return d / 20; });
 	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
-	createDistribution('Rating', '#artistRatingDistribution', 'Artist', 'Top Artists', 1, function(d) { return d / 20 + 1; });
+	createDistribution('Rating', '#artistRatingDistribution', 'Artist', 'Top Artists', 1, function(d) { return d / 20; });
 	createTop('Play Count', '#topArtist', 'Artist', 'Top Artists', ['Name']);
 	createCalendar('Play Date UTC', '#lastGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
 	createCalendar('Date Added', '#addedGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
@@ -206,11 +206,17 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	function refresh(selected) {
 		// Initialize top song data
 		var data = getData(selected);
+		var filtered = filterData(selected, legendMetric);
+		var means = [{name: 'Mean', val: d3.mean(filtered, function(d) { return d[z]; })},
+		             {name: 'Median', val: d3.median(filtered, function(d) { return d[z]; })}];
+		if (fn) {
+			means.forEach(function(d) { d.val = fn(d.val); });
+		}
 		var colors = d3.scale.category10();
 		
 		// Create bars and count text
-		var keyMax = d3.max(data, function(d) { return d.key; });
-		var scaleX = d3.scale.linear().domain([0, keyMax - keyMax % bucket + bucket]).range([0, width - margin.left - margin.right]);
+		var keyExtent = d3.extent(data, function(d) { return d.key; });
+		var scaleX = d3.scale.linear().domain([Math.min(0, keyExtent[0] - keyExtent[0] % bucket), keyExtent[1] - keyExtent[1] % bucket + bucket]).range([0, width - margin.left - margin.right]);
 		var scaleY = d3.scale.linear().domain([0, d3.max(data, function(d) {
 			return Object.keys(d.val).reduce(function(a, cur) { return a + parseInt(d.val[cur].count); }, 0);
 		})]).range([height - margin.bottom - margin.top, 0]);
@@ -252,8 +258,9 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 				transitioning = false;
 			}, delay * 1.5)
 		});
-		
-		
+		svg.selectAll('.means').data(means).enter().append('line').attr('class', 'means')
+			.attr('y1', margin.top).attr('x1', function(d) { return margin.left + scaleX(d.val); })
+			.attr('y2', height - margin.bottom).attr('x2', function(d) { return margin.left + scaleX(d.val); });
 
 		xAxisEl.transition().duration(delay).call(xAxis);
 		yAxisEl.transition().duration(delay).call(yAxis);
@@ -270,10 +277,10 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 			d['Temp'] -= d['Temp'] % bucket;
 		});
 		var raw = aggregateMetricLegend(filtered, 'Temp', legend, legendMetric);
-		var max = d3.max(raw, function(d) { return parseInt(d.name); });
-		var w = (width - margin.left - margin.right) / max;
+		var extent = d3.extent(raw, function(d) { return parseInt(d.name); });
+		var w = (width - margin.left - margin.right) / (extent[1] - Math.min(0, extent[0]) + bucket);
 		return raw.map(function(d, i) {
-			return {w: w * bucket, val: d.val, key: (parseInt(d.name) - bucket)};
+			return {w: w * bucket, val: d.val, key: parseInt(d.name)};
 		});
 	}
 	
@@ -414,6 +421,16 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 }
 
 /**
+ * Filtered the full data but does not format it
+ * @param selected - Selected legend values
+ * @param legendMetric - Legend metric
+ * @returns Filtered full data
+ */
+function filterData(selected, legendMetric) {
+	return full.filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
+}
+
+/**
  * Creates legend items at attaches an on click function.
  * @param full - Full data set
  * @param metric - Metric of full data set to be aggregated and turned into legend items
@@ -498,18 +515,18 @@ function aggregateMetric(full, metric, counter) {
 function aggregateMetricLegend(full, metric, legend, filter) {
 	var data = [];
 	$.each(full.reduce(function(all, cur) {
-		if (all[cur[metric]]) {
-			if (all[cur[metric]][cur[filter]]) {
+		if (all[cur[metric]] != undefined) {
+			if (all[cur[metric]][cur[filter]] != undefined) {
 				all[cur[metric]][cur[filter]].count++;
 			} else {
 				all[cur[metric]]['Other'].count++;
 			}
-		} else if(cur[metric]) {
+		} else if(cur[metric] != undefined) {
 			var base = {};
 			legend.forEach(function(d) {
 				base[d.name] = {color: d.color, count: 0, sort: d.val};
 			});
-			if (base[cur[filter]]) {
+			if (base[cur[filter]] != undefined) {
 				base[cur[filter]].count = 1;
 			} else {
 				base['Other'].count = 1;
