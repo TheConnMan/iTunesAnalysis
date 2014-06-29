@@ -137,6 +137,11 @@ function createTop(z, id, legendMetric, legendTitle, textArray) {
 			svg.selectAll('.top-name').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
 			svg.selectAll('.top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(d.data[z]) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return d.data[z]; });
+			
+			svg.selectAll('.top-data').on('click', function(d) {
+				queryYouTube(d.name)
+			})
+			
 			transitioning = false;
 		}, svg.selectAll('.top-data')[0].length == 0 ? 0 : delay);
 	}
@@ -397,8 +402,12 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 			old = old.slice(0, Math.min(old.length, Math.round((height * (years[1] - years[0] + 1) - 60) / lineHeight)))
 			focusResults.selectAll('text').data(old).exit().remove();
 			focusResults.selectAll('text').data(old).enter().append('text')
+				.attr('class', 'detailText')
 				.attr('transform', function(e, i) { return 'translate(0,' + lineHeight * i + ')'; })
-			focusResults.selectAll('text').text(function(e) { return textArray.map(function(f) { return e[f]; }).join(' - '); });
+			focusResults.selectAll('text').text(function(e) { return textArray.map(function(f) { return e[f]; }).join(' - '); })
+				.on('click', function(d) {
+					queryYouTube(d.Name + ' - ' + d.Artist)
+				});
 		});
 		transitioning = false;
 	}
@@ -553,8 +562,8 @@ function aggregateMetricLegend(full, metric, legend, filter) {
 
 /**
  * Highlights selected filter
- * @param d
- * @param me
+ * @param d - Selected filter data
+ * @param me - Selected filter
  */
 function legendFilter(d, me) {
 	var classes = me.attr('class').split(' ');
@@ -594,4 +603,12 @@ function decompress(arr) {
 // Calculates number of bytes in a string
 function byteCount(s) {
     return encodeURI(s).split(/%..|./).length - 1;
+}
+
+/**
+ * Queries YouTube for the input string.
+ * @param q - Query string
+ */
+function queryYouTube(q) {
+	window.open('https://youtube.com/results?search_query=' + encodeURIComponent(q), '_blank');
 }

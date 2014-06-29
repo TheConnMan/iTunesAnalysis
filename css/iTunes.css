@@ -24,6 +24,8 @@ text {
 	width: 100%;
 }
 
+/* Legend */
+
 .legend {
 	cursor: pointer;
 }
@@ -38,13 +40,21 @@ text {
 	cursor: pointer !important;
 }
 
+/* Distribution */
+
 .means {
 	stroke-width: 2;
 	stroke: black;
 }
 
+/* Top */
+
 .top-name {
 	text-anchor: end;
+}
+
+.top-data {
+	cursor: pointer;
 }
 
 /* Calendar */
@@ -63,6 +73,10 @@ text {
   fill: none;
   stroke: #000;
   stroke-width: 2px;
+}
+
+.detailText {
+	cursor: pointer;
 }
 
 .RdYlGn .q10-11{fill:rgb(165,0,38)}
