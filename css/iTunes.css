@@ -38,6 +38,11 @@ text {
 	cursor: pointer !important;
 }
 
+.means {
+	stroke-width: 2;
+	stroke: black;
+}
+
 .top-name {
 	text-anchor: end;
 }
@@ -46,6 +51,7 @@ text {
 .day {
   fill: #fff;
   stroke: #ccc;
+  cursor: pointer;
 }
 
 #focus {
