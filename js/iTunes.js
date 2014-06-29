@@ -68,7 +68,7 @@ function createAll() {
 	createDistribution('Play Count', '#playDistribution', 'Genre', 'Top Genres', 5);
 	createDistribution('Rating', '#ratingDistribution', 'Genre', 'Top Genres', 1, function(d) { return d / 20; });
 	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
-	createDistribution('Rating', '#artistRatingDistribution', 'Artist', 'Top Artists', 1, function(d) { return d / 20; });
+	createDistribution('Rating', '#artistRatingDistribution', 'Artist', 'Top Artists', 1, function(d) { return d / 20 - .5; });
 	createTop('Play Count', '#topArtist', 'Artist', 'Top Artists', ['Name']);
 	createCalendar('Play Date UTC', '#lastGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
 	createCalendar('Date Added', '#addedGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
@@ -219,7 +219,7 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 		var scaleX = d3.scale.linear().domain([Math.min(0, keyExtent[0] - keyExtent[0] % bucket), keyExtent[1] - keyExtent[1] % bucket + bucket]).range([0, width - margin.left - margin.right]);
 		var scaleY = d3.scale.linear().domain([0, d3.max(data, function(d) {
 			return Object.keys(d.val).reduce(function(a, cur) { return a + parseInt(d.val[cur].count); }, 0);
-		})]).range([height - margin.bottom - margin.top, 0]);
+		}) * 1.1]).range([height - margin.bottom - margin.top, 0]);
 		
 		var xAxis = d3.svg.axis()
 		    .scale(scaleX)
@@ -261,6 +261,17 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 		svg.selectAll('.means').data(means).enter().append('line').attr('class', 'means')
 			.attr('y1', margin.top).attr('x1', function(d) { return margin.left + scaleX(d.val); })
 			.attr('y2', height - margin.bottom).attr('x2', function(d) { return margin.left + scaleX(d.val); });
+		
+		svg.selectAll('.meansText').data(means).enter().append('text').attr('class', 'meansText')
+			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.val) - 10) + ',' + (margin.top + 40) + ')rotate(-90)'; })
+			.text(function(d) { return d.name; });
+		
+		svg.selectAll('.means').transition().duration(2.5 * delay)
+			.attr('y1', margin.top).attr('x1', function(d) { return margin.left + scaleX(d.val); })
+			.attr('y2', height - margin.bottom).attr('x2', function(d) { return margin.left + scaleX(d.val); });
+		
+		svg.selectAll('.meansText').transition().duration(2.5 * delay)
+			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.val) - 10) + ',' + (margin.top + 40) + ')rotate(-90)'; });
 
 		xAxisEl.transition().duration(delay).call(xAxis);
 		yAxisEl.transition().duration(delay).call(yAxis);
