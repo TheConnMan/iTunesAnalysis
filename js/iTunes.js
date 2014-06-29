@@ -541,7 +541,7 @@ function aggregateMetricLegend(full, metric, legend, filter) {
 			} else {
 				all[cur[metric]]['Other'].count++;
 			}
-		} else if(cur[metric] != undefined) {
+		} else if(cur[metric] != undefined && !isNaN(cur[metric])) {
 			var base = {};
 			legend.forEach(function(d) {
 				base[d.name] = {color: d.color, count: 0, sort: d.val};
