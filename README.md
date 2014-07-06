@@ -1,4 +1,4 @@
-[iTunesAnalysis](https://theconnman.github.io/iTunesAnalysis)
+[iTunesAnalysis](http://theconnman.com/iTunesAnalysis)
 ============
 The iTunes Analyzer is a small project to provide analytics about your iTunes library. The demo data is of my library but by uploading your **iTunes Music Library.xml** file you can analyze your own library out of the box.
 
