@@ -383,7 +383,7 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 		var max = d3.max(Object.keys(data), function(d) { return data[d]; });
 		var color = d3.scale.linear()
 			.domain([0, max])
-			.range(['#999', 'green']);
+			.range(['#EEE', 'green']);
 		
 		svg.selectAll(".day").data([]).exit().transition().duration(delay * 10).delay(function(d, i) { return i; }).style('fill', 'white').select("title")
 			.text(function(d) { return d; });
