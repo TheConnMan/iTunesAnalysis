@@ -66,13 +66,13 @@ function createAll() {
 	createTop(function(d) { return d['Play Count']; }, '#topPlay', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
 	createTop(function(d) { return d['Skip Count']; }, '#topSkip', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
 	createDistribution('Play Count', function(d) { return d['Play Count']; }, '#playDistribution', function(d) { return d['Genre']; }, 'Top Genres', 5);
-	createDistribution('Rating', function(d) { return d['Rating']; }, '#ratingDistribution', function(d) { return d['Genre']; }, 'Top Genres', 1, function(d) { return d / 20; });
-	createDistribution('Total Time', function(d) { return d['Total Time']; }, '#timeDistribution', function(d) { return d['Genre']; }, 'Top Genres', 10, function(d) { return d / 1000; });
-	createDistribution('Rating', function(d) { return d['Rating']; }, '#artistRatingDistribution', function(d) { return d['Artist']; }, 'Top Artists', 1, function(d) { return d / 20 - .5; });
+	createDistribution('Rating', function(d) { return d['Rating'] / 20; }, '#ratingDistribution', function(d) { return d['Genre']; }, 'Top Genres', 1);
+	createDistribution('Total Time', function(d) { return d['Total Time'] / 1000; }, '#timeDistribution', function(d) { return d['Genre']; }, 'Top Genres', 10);
+	createDistribution('Rating', function(d) { return d['Rating'] / 20; }, '#artistRatingDistribution', function(d) { return d['Artist']; }, 'Top Artists', 1);
 	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d['Artist']; }, 'Top Artists', ['Name']);
 	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist', 'Play Count']);
 	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist', 'Play Count']);
-	createTop(function(d) { return d['Play Count'] && d['Date Added'] ? Math.round(d['Play Count'] / ((new Date().getTime() - new Date(d['Date Added']).getTime()) / 1000 / 3600 / 24) * 1000) / 1000 : null; }, '#topDensity', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
+	createDistribution('Last Play Hour', function(d) { return d['Play Date UTC'] ? new Date(d['Play Date UTC']).getHours() : null; }, '#intraday', function(d) { return d['Genre']; }, 'Top Genres', 1);
 }
 
 /**
@@ -149,7 +149,7 @@ function createTop(metricAccessor, id, legendAccessor, legendTitle, textArray) {
 	
 	// Filters down to top songs
 	function getData(selected) {
-		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
+		var filtered = full.slice(0).filter(function(d) { return metricAccessor(d) && (selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1); });
 		var raw = filtered.sort(function(a, b) { return (metricAccessor(b) ? metricAccessor(b) : 0) - (metricAccessor(a) ? metricAccessor(a) : 0); }).slice(0, Math.min(filtered.length, 25));
 		var h = (height - margin.top - margin.bottom) / raw.length -  pad;
 		return raw.map(function(d, i) {
@@ -173,9 +173,8 @@ function createTop(metricAccessor, id, legendAccessor, legendTitle, textArray) {
  * @param legendAccessor - Metric used to create the legend
  * @param legendTitle - Title for the legend
  * @param bucket - Bucket size
- * @param fn - Optional function to preprocess metric data
  */
-function createDistribution(axisName, metricAccessor, id, legendAccessor, legendTitle, bucket, fn) {
+function createDistribution(axisName, metricAccessor, id, legendAccessor, legendTitle, bucket) {
 	var margin = {left: 55, right: 20, top: 50, bottom: 40};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
@@ -216,9 +215,6 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 		var filtered = filterData(selected, legendAccessor);
 		var means = [{name: 'Mean', val: d3.mean(filtered, function(d) { return metricAccessor(d); })},
 		             {name: 'Median', val: d3.median(filtered, function(d) { return metricAccessor(d); })}];
-		if (fn) {
-			means.forEach(function(d) { d.val = fn(d.val); });
-		}
 		var colors = d3.scale.category10();
 		
 		// Create bars and count text
@@ -286,12 +282,9 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 	
 	// Aggregates filtered play count distributions
 	function getData(selected) {
-		var filtered = full.filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
+		var filtered = full.filter(function(d) { return metricAccessor(d) && (selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1); });
 		filtered.forEach(function(d) {
 			d['Temp'] = metricAccessor(d);
-			if (fn) {
-				d['Temp'] = fn(d['Temp']);
-			}
 			d['Temp'] -= d['Temp'] % bucket;
 		});
 		var raw = aggregateMetricLegend(filtered, 'Temp', legend, legendAccessor);
@@ -385,7 +378,7 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textArr
 		var max = d3.max(Object.keys(data), function(d) { return data[d]; });
 		var color = d3.scale.linear()
 			.domain([0, max])
-			.range(['#EEE', 'green']);
+			.range(['#DDD', 'green']);
 		
 		svg.selectAll(".day").data([]).exit().transition().duration(delay * 10).delay(function(d, i) { return i; }).style('fill', 'white').select("title")
 			.text(function(d) { return d; });
@@ -428,7 +421,7 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textArr
 	// Filters down to filtered data
 	function getData(selected) {
 		var format = d3.time.format("%Y-%m-%d");
-		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
+		var filtered = full.slice(0).filter(function(d) { return metricAccessor(d) && (selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1); });
 		var raw = {};
 		filtered.filter(function(d) { return metricAccessor(d); }).forEach(function(d) {
 			var date = format(new Date(metricAccessor(d)));
@@ -516,11 +509,13 @@ function createLegend(full, accessor, svg, label, countAccessor, fn) {
 function aggregateMetric(full, accessor, countAccessor) {
 	var data = [];
 	$.each(full.reduce(function(all, cur) {
-		if (all[accessor(cur)]) {
-			all[accessor(cur)] += countAccessor(cur);
-		} else if (accessor(cur)) {
-			all[accessor(cur)] = countAccessor(cur);
-		};
+		if (countAccessor(cur)) {
+			if (all[accessor(cur)]) {
+				all[accessor(cur)] += countAccessor(cur);
+			} else if (accessor(cur)) {
+				all[accessor(cur)] = countAccessor(cur);
+			};
+		}
 		return all;
 	}, {}), function(k, v) {
 		data.push({name: k, val: v});
