@@ -392,7 +392,7 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textArr
 			$('#focus').removeAttr('id');
 			d3.select(this).attr('id', 'focus');
 			focusDate.text(d);
-			var old = full.slice(0).filter(function(e) { return format(new Date(metricAccessor(d))) == d && (selected.length == 0 || selected.indexOf(legendAccessor(e)) != -1); })
+			var old = full.slice(0).filter(function(e) { return format(new Date(metricAccessor(e))) == d && (selected.length == 0 || selected.indexOf(legendAccessor(e)) != -1); })
 				.sort(function(e, f) { return f['Play Count'] - e['Play Count']; });
 			old = old.slice(0, Math.min(old.length, Math.round((height * (years[1] - years[0] + 1) - 60) / lineHeight)))
 			focusResults.selectAll('text').data(old).exit().remove();
