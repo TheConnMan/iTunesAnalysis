@@ -63,28 +63,27 @@ function parseXML(xml) {
  * Creates all visualizations
  */
 function createAll() {
-	createTop('Play Count', function(d) { return d['Play Count']; }, '#topPlay', 'Genre', 'Top Genres', ['Name', 'Artist']);
-	createTop('Skip Count', function(d) { return d['Skip Count']; }, '#topSkip', 'Genre', 'Top Genres', ['Name', 'Artist']);
-	createDistribution('Play Count', '#playDistribution', 'Genre', 'Top Genres', 5);
-	createDistribution('Rating', '#ratingDistribution', 'Genre', 'Top Genres', 1, function(d) { return d / 20; });
-	createDistribution('Total Time', '#timeDistribution', 'Genre', 'Top Genres', 10, function(d) { return d / 1000; });
-	createDistribution('Rating', '#artistRatingDistribution', 'Artist', 'Top Artists', 1, function(d) { return d / 20 - .5; });
-	createTop('Play Count', function(d) { return d['Play Count']; }, '#topArtist', 'Artist', 'Top Artists', ['Name']);
-	createCalendar('Play Date UTC', '#lastGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
-	createCalendar('Date Added', '#addedGenre', 'Genre', 'Top Genres', ['Name', 'Artist', 'Play Count']);
-	createTop('Play Count', function(d) { return d['Play Count'] && d['Date Added'] ? Math.round(d['Play Count'] / ((new Date().getTime() - new Date(d['Date Added']).getTime()) / 1000 / 3600 / 24) * 1000) / 1000 : null; }, '#topDensity', 'Genre', 'Top Genres', ['Name', 'Artist']);
+	createTop(function(d) { return d['Play Count']; }, '#topPlay', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
+	createTop(function(d) { return d['Skip Count']; }, '#topSkip', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
+	createDistribution('Play Count', function(d) { return d['Play Count']; }, '#playDistribution', function(d) { return d['Genre']; }, 'Top Genres', 5);
+	createDistribution('Rating', function(d) { return d['Rating']; }, '#ratingDistribution', function(d) { return d['Genre']; }, 'Top Genres', 1, function(d) { return d / 20; });
+	createDistribution('Total Time', function(d) { return d['Total Time']; }, '#timeDistribution', function(d) { return d['Genre']; }, 'Top Genres', 10, function(d) { return d / 1000; });
+	createDistribution('Rating', function(d) { return d['Rating']; }, '#artistRatingDistribution', function(d) { return d['Artist']; }, 'Top Artists', 1, function(d) { return d / 20 - .5; });
+	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d['Artist']; }, 'Top Artists', ['Name']);
+	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist', 'Play Count']);
+	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist', 'Play Count']);
+	createTop(function(d) { return d['Play Count'] && d['Date Added'] ? Math.round(d['Play Count'] / ((new Date().getTime() - new Date(d['Date Added']).getTime()) / 1000 / 3600 / 24) * 1000) / 1000 : null; }, '#topDensity', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
 }
 
 /**
  * Creates a top graph.
- * @param z - Metric
- * @param zFun - Metric reference function
+ * @param metricAccessor - Metric reference function
  * @param id - Id of chart container
- * @param legendMetric - Metric used to create the legend
+ * @param legendAccessor - Metric used to create the legend
  * @param legendTitle - Title for the legend
  * @param textArray - Array of fields to concatenate into a label
  */
-function createTop(z, zFun, id, legendMetric, legendTitle, textArray) {
+function createTop(metricAccessor, id, legendAccessor, legendTitle, textArray) {
 	var margin = {left: 20, right: 40, top: 50, bottom: 20};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
@@ -94,7 +93,7 @@ function createTop(z, zFun, id, legendMetric, legendTitle, textArray) {
 		.attr('width', width).attr('height', height);
 	
 	// Initialize genre data
-	var legend = createLegend(full.slice(0), legendMetric, svg, legendTitle, z, refresh);
+	var legend = createLegend(full.slice(0), legendAccessor, svg, legendTitle, metricAccessor, refresh);
 	
 	refresh([])
 	
@@ -106,7 +105,7 @@ function createTop(z, zFun, id, legendMetric, legendTitle, textArray) {
 		var x0 = d3.max(data, function(d) { return getTextSize(d.name); }) + margin.left;
 		
 		// Create bars and count text
-		var scale = d3.scale.linear().domain([0, d3.max(data, function(d) { return zFun(d.data); })]).range([0, width - margin.right - x0]);
+		var scale = d3.scale.linear().domain([0, d3.max(data, function(d) { return metricAccessor(d.data); })]).range([0, width - margin.right - x0]);
 		svg.selectAll('.top-name').data(data).exit().remove();
 		svg.selectAll('.top-data').data(data).exit().remove();
 		svg.selectAll('.top-count').data(data).exit().remove();
@@ -131,14 +130,14 @@ function createTop(z, zFun, id, legendMetric, legendTitle, textArray) {
 				.append('text')
 				.attr('class', 'top-count')
 				.attr('transform', function(d) { return 'translate(' + (x0 + 5) + ',' + (d.y + 12) + ')'; })
-				.text(function(d) { return zFun(d.data); });
+				.text(function(d) { return metricAccessor(d.data); });
 			
 			// Transitions
 			svg.selectAll('.top-data').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
-				.attr('width', function(d) { return scale(zFun(d.data)); }).style('fill', function(d) { return getColor(d, legend); })
+				.attr('width', function(d) { return scale(metricAccessor(d.data)); }).style('fill', function(d) { return getColor(d, legend); })
 			svg.selectAll('.top-name').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
-			svg.selectAll('.top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(zFun(d.data)) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return zFun(d.data); });
+			svg.selectAll('.top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(metricAccessor(d.data)) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return metricAccessor(d.data); });
 			
 			svg.selectAll('.top-data').on('click', function(d) {
 				queryYouTube(d.name)
@@ -150,32 +149,33 @@ function createTop(z, zFun, id, legendMetric, legendTitle, textArray) {
 	
 	// Filters down to top songs
 	function getData(selected) {
-		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
-		var raw = filtered.sort(function(a, b) { return (zFun(b) ? zFun(b) : 0) - (zFun(a) ? zFun(a) : 0); }).slice(0, Math.min(filtered.length, 25));
+		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
+		var raw = filtered.sort(function(a, b) { return (metricAccessor(b) ? metricAccessor(b) : 0) - (metricAccessor(a) ? metricAccessor(a) : 0); }).slice(0, Math.min(filtered.length, 25));
 		var h = (height - margin.top - margin.bottom) / raw.length -  pad;
 		return raw.map(function(d, i) {
-			var c = zFun(d);
+			var c = metricAccessor(d);
 			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: textArray.map(function(e) { return d[e]; }).join(' - ')};
 		});
 	}
 	
 	// Get bar color
 	function getColor(d, genres) {
-		var c = $.grep(genres, function(g) { return g.name == d.data[legendMetric]; });
+		var c = $.grep(genres, function(g) { return g.name == legendAccessor(d.data); });
 		return c.length != 0 ? c[0].color : 'black';
 	}
 }
 
 /**
  * Creates a distribution graph.
- * @param z - Metric
+ * @param axisName - Name of y-axis
+ * @param metricAccessor - Metric reference function
  * @param id - Id of chart container
- * @param legendMetric - Metric used to create the legend
+ * @param legendAccessor - Metric used to create the legend
  * @param legendTitle - Title for the legend
  * @param bucket - Bucket size
  * @param fn - Optional function to preprocess metric data
  */
-function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
+function createDistribution(axisName, metricAccessor, id, legendAccessor, legendTitle, bucket, fn) {
 	var margin = {left: 55, right: 20, top: 50, bottom: 40};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
@@ -191,7 +191,7 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 		.attr("x", width - margin.right - 40)
 		.attr("dy", margin.bottom - 5)
 		.style("text-anchor", "end")
-		.text(z);
+		.text(axisName);
 	
 	var yAxisEl = svg.append("g")
 	    .attr("class", "y axis")
@@ -204,7 +204,7 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 		.text("Song Count");
 	
 	// Initialize legend data
-	var legend = createLegend(full.slice(0), legendMetric, svg, legendTitle, z, refresh);
+	var legend = createLegend(full.slice(0), legendAccessor, svg, legendTitle, metricAccessor, refresh);
 	legend.push({color: 'black', val: 0, name: 'Other'});
 	
 	refresh([])
@@ -213,9 +213,9 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	function refresh(selected) {
 		// Initialize top song data
 		var data = getData(selected);
-		var filtered = filterData(selected, legendMetric);
-		var means = [{name: 'Mean', val: d3.mean(filtered, function(d) { return d[z]; })},
-		             {name: 'Median', val: d3.median(filtered, function(d) { return d[z]; })}];
+		var filtered = filterData(selected, legendAccessor);
+		var means = [{name: 'Mean', val: d3.mean(filtered, function(d) { return metricAccessor(d); })},
+		             {name: 'Median', val: d3.median(filtered, function(d) { return metricAccessor(d); })}];
 		if (fn) {
 			means.forEach(function(d) { d.val = fn(d.val); });
 		}
@@ -286,15 +286,15 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	
 	// Aggregates filtered play count distributions
 	function getData(selected) {
-		var filtered = full.filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
+		var filtered = full.filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
 		filtered.forEach(function(d) {
-			d['Temp'] = d[z];
+			d['Temp'] = metricAccessor(d);
 			if (fn) {
 				d['Temp'] = fn(d['Temp']);
 			}
 			d['Temp'] -= d['Temp'] % bucket;
 		});
-		var raw = aggregateMetricLegend(filtered, 'Temp', legend, legendMetric);
+		var raw = aggregateMetricLegend(filtered, 'Temp', legend, legendAccessor);
 		var extent = d3.extent(raw, function(d) { return parseInt(d.name); });
 		var w = (width - margin.left - margin.right) / (extent[1] - Math.min(0, extent[0]) + bucket);
 		return raw.map(function(d, i) {
@@ -304,20 +304,20 @@ function createDistribution(z, id, legendMetric, legendTitle, bucket, fn) {
 	
 	// Get bar color
 	function getColor(d, legend) {
-		var c = $.grep(legend, function(g) { return g.name == d.data[legendMetric]; });
+		var c = $.grep(legend, function(g) { return g.name == legendAccessor(d.data); });
 		return c.length != 0 ? c[0].color : 'black';
 	}
 }
 
 /**
  * Creates a calendar view based on a date metric
- * @param z - Metric
+ * @param metricAccessor - Metric reference function
  * @param id - Id of chart container
- * @param legendMetric - Metric used to create the legend
+ * @param legendAccessor - Metric used to create the legend
  * @param legendTitle - Title for the legend
  * @param textArray - Array of fields to concatenate into a label
  */
-function createCalendar(z, id, legendMetric, legendTitle, textArray) {
+function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textArray) {
 	var margin = {left: 20, right: 350, top: 50, bottom: 20}, cellSize = (width - margin.left - margin.right) / 54, height = cellSize * 8, lineHeight = 20;
 	// Remove old svg
 	d3.select(id).selectAll('svg').remove();
@@ -331,7 +331,7 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 		.attr('width', width).attr('height', margin.top + margin.bottom + height * (years[1] - years[0] + 1));
 	
 	// Initialize legend data
-	var legend = createLegend(full.slice(0), legendMetric, mainSvg, legendTitle, 'Play Count', refresh);
+	var legend = createLegend(full.slice(0), legendAccessor, mainSvg, legendTitle, function(d) { return d['Play Count']; }, refresh);
 	
 	var day = d3.time.format("%w"),
 		week = d3.time.format("%U"),
@@ -399,7 +399,7 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 			$('#focus').removeAttr('id');
 			d3.select(this).attr('id', 'focus');
 			focusDate.text(d);
-			var old = full.slice(0).filter(function(e) { return format(new Date(e[z])) == d && (selected.length == 0 || selected.indexOf(e[legendMetric]) != -1); })
+			var old = full.slice(0).filter(function(e) { return format(new Date(metricAccessor(d))) == d && (selected.length == 0 || selected.indexOf(legendAccessor(e)) != -1); })
 				.sort(function(e, f) { return f['Play Count'] - e['Play Count']; });
 			old = old.slice(0, Math.min(old.length, Math.round((height * (years[1] - years[0] + 1) - 60) / lineHeight)))
 			focusResults.selectAll('text').data(old).exit().remove();
@@ -428,10 +428,10 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 	// Filters down to filtered data
 	function getData(selected) {
 		var format = d3.time.format("%Y-%m-%d");
-		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
+		var filtered = full.slice(0).filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
 		var raw = {};
-		filtered.filter(function(d) { return d[z]; }).forEach(function(d) {
-			var date = format(new Date(d[z]));
+		filtered.filter(function(d) { return metricAccessor(d); }).forEach(function(d) {
+			var date = format(new Date(metricAccessor(d)));
 			if (raw[date]) {
 				raw[date]++;
 			} else {
@@ -445,24 +445,25 @@ function createCalendar(z, id, legendMetric, legendTitle, textArray) {
 /**
  * Filtered the full data but does not format it
  * @param selected - Selected legend values
- * @param legendMetric - Legend metric
+ * @param legendAccessor - Metric used to create the legend
  * @returns Filtered full data
  */
-function filterData(selected, legendMetric) {
-	return full.filter(function(d) { return selected.length == 0 || selected.indexOf(d[legendMetric]) != -1; });
+function filterData(selected, legendAccessor) {
+	return full.filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
 }
 
 /**
  * Creates legend items at attaches an on click function.
  * @param full - Full data set
- * @param metric - Metric of full data set to be aggregated and turned into legend items
+ * @param accessor - Function which access the aggregated metric
  * @param svg - Current SVG
  * @param label - Legend title
+ * @param countAccessor - Function which accesses the counter metric
  * @param fn - Function to be executed on click, input is an array of the currently selected legend items
  * @returns Updated data array
  */
-function createLegend(full, metric, svg, label, counter, fn) {
-	var data = aggregateMetric(full, metric, counter);
+function createLegend(full, accessor, svg, label, countAccessor, fn) {
+	var data = aggregateMetric(full, accessor, countAccessor);
 	var colors = d3.scale.category10();
 	// Find genre text sizes
 	var total = svg.attr('width');
@@ -508,16 +509,17 @@ function createLegend(full, metric, svg, label, counter, fn) {
 /**
  * Aggregates a metric
  * @param all - Array of data to be aggregated
- * @param metric - Metric to be counted
+ * @param accessor - Function which access the aggregated metric
+ * @param countAccessor - Function which accesses the counter metric
  * @returns {Array} Array of objects with name of metric value and count
  */
-function aggregateMetric(full, metric, counter) {
+function aggregateMetric(full, accessor, countAccessor) {
 	var data = [];
 	$.each(full.reduce(function(all, cur) {
-		if (all[cur[metric]]) {
-			all[cur[metric]] += cur[counter];
-		} else if(cur[metric]) {
-			all[cur[metric]] = cur[counter];
+		if (all[accessor(cur)]) {
+			all[accessor(cur)] += countAccessor(cur);
+		} else if (accessor(cur)) {
+			all[accessor(cur)] = countAccessor(cur);
 		};
 		return all;
 	}, {}), function(k, v) {
@@ -531,15 +533,15 @@ function aggregateMetric(full, metric, counter) {
  * @param all - Array of data to be aggregated
  * @param metric - Metric to be counted
  * @param legend - Legend items to aggregate into
- * @param filter - Metric used to generate legend
+ * @param legendAccessor - Metric used to create the legend
  * @returns {Array} Array of objects with name of metric value and count
  */
-function aggregateMetricLegend(full, metric, legend, filter) {
+function aggregateMetricLegend(full, metric, legend, legendAccessor) {
 	var data = [];
 	$.each(full.reduce(function(all, cur) {
 		if (all[cur[metric]] != undefined) {
-			if (all[cur[metric]][cur[filter]] != undefined) {
-				all[cur[metric]][cur[filter]].count++;
+			if (all[cur[metric]][legendAccessor(cur)] != undefined) {
+				all[cur[metric]][legendAccessor(cur)].count++;
 			} else {
 				all[cur[metric]]['Other'].count++;
 			}
@@ -548,8 +550,8 @@ function aggregateMetricLegend(full, metric, legend, filter) {
 			legend.forEach(function(d) {
 				base[d.name] = {color: d.color, count: 0, sort: d.val};
 			});
-			if (base[cur[filter]] != undefined) {
-				base[cur[filter]].count = 1;
+			if (base[legendAccessor(cur)] != undefined) {
+				base[legendAccessor(cur)].count = 1;
 			} else {
 				base['Other'].count = 1;
 			}
