@@ -582,7 +582,7 @@ function legendFilter(d, me) {
 // Finds the true size of text when rendered
 function getTextSize(text) {
 	var t = d3.select('svg').append('text').attr('id', 'test-text').text(text);
-	var size = $('#test-text').width();
+	var size = $('#test-text')[0].getBoundingClientRect().width;
 	t.remove();
 	return size + 5;
 }
