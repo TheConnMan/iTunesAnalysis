@@ -63,15 +63,15 @@ function parseXML(xml) {
  * Creates all visualizations
  */
 function createAll() {
-	createTop(function(d) { return d['Play Count']; }, '#topPlay', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
-	createTop(function(d) { return d['Skip Count']; }, '#topSkip', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist']);
+	createTop(function(d) { return d['Play Count']; }, '#topPlay', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist']; });
+	createTop(function(d) { return d['Skip Count']; }, '#topSkip', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist']; });
 	createDistribution('Play Count', function(d) { return d['Play Count']; }, '#playDistribution', function(d) { return d['Genre']; }, 'Top Genres', 5);
 	createDistribution('Rating', function(d) { return d['Rating'] / 20; }, '#ratingDistribution', function(d) { return d['Genre']; }, 'Top Genres', 1);
 	createDistribution('Total Time', function(d) { return d['Total Time'] / 1000; }, '#timeDistribution', function(d) { return d['Genre']; }, 'Top Genres', 10);
 	createDistribution('Rating', function(d) { return d['Rating'] / 20; }, '#artistRatingDistribution', function(d) { return d['Artist']; }, 'Top Artists', 1);
-	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d['Artist']; }, 'Top Artists', ['Name']);
-	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist', 'Play Count']);
-	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d['Genre']; }, 'Top Genres', ['Name', 'Artist', 'Play Count']);
+	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d['Artist']; }, 'Top Artists', function(d) { return d['Name']; });
+	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist'] + ' - ' + d['Play Count']; });
+	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist'] + ' - ' + d['Play Count']; });
 	createDistribution('Last Play Hour', function(d) { return d['Play Date UTC'] ? new Date(d['Play Date UTC']).getHours() : null; }, '#intraday', function(d) { return d['Genre']; }, 'Top Genres', 1);
 }
 
@@ -81,9 +81,9 @@ function createAll() {
  * @param id - Id of chart container
  * @param legendAccessor - Metric used to create the legend
  * @param legendTitle - Title for the legend
- * @param textArray - Array of fields to concatenate into a label
+ * @param textAccessor - Text rendering function
  */
-function createTop(metricAccessor, id, legendAccessor, legendTitle, textArray) {
+function createTop(metricAccessor, id, legendAccessor, legendTitle, textAccessor) {
 	var margin = {left: 20, right: 40, top: 50, bottom: 20};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
@@ -154,7 +154,7 @@ function createTop(metricAccessor, id, legendAccessor, legendTitle, textArray) {
 		var h = (height - margin.top - margin.bottom) / raw.length -  pad;
 		return raw.map(function(d, i) {
 			var c = metricAccessor(d);
-			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: textArray.map(function(e) { return d[e]; }).join(' - ')};
+			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: textAccessor(d)};
 		});
 	}
 	
@@ -308,9 +308,9 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
  * @param id - Id of chart container
  * @param legendAccessor - Metric used to create the legend
  * @param legendTitle - Title for the legend
- * @param textArray - Array of fields to concatenate into a label
+ * @param textAccessor - Text rendering function
  */
-function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textArray) {
+function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAccessor) {
 	var margin = {left: 20, right: 350, top: 50, bottom: 20}, cellSize = (width - margin.left - margin.right) / 54, height = cellSize * 8, lineHeight = 20;
 	// Remove old svg
 	d3.select(id).selectAll('svg').remove();
@@ -399,7 +399,7 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textArr
 			focusResults.selectAll('text').data(old).enter().append('text')
 				.attr('class', 'detailText')
 				.attr('transform', function(e, i) { return 'translate(0,' + lineHeight * i + ')'; })
-			focusResults.selectAll('text').text(function(e) { return textArray.map(function(f) { return e[f]; }).join(' - '); })
+			focusResults.selectAll('text').text(textAccessor)
 				.on('click', function(d) {
 					queryYouTube(d.Name + ' - ' + d.Artist)
 				});
