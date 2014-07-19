@@ -338,7 +338,7 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAcc
 	var focusResults = mainSvg.append('g').attr('transform', 'translate(' + (focusStart[0] + 10) + ',' + (focusStart[1] + 70) +')')
 	
 	var svg = mainSvg.selectAll("g.RdYlGn")
-		.data(d3.range(years[0], years[1] + 1))
+		.data(d3.range(years[0], years[1] + 1).reverse())
 		.enter().append("g")
 		.attr("width", cellSize * 56)
 		.attr("height", height)
