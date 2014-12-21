@@ -54,7 +54,7 @@ function parseXML(xml) {
 			}
 		});
 		return obj;
-	})).filter(function(d) { return d['Kind'].indexOf('audio') != -1; });
+	})).filter(function(d) { return d['Kind'] && d['Kind'].indexOf('audio') != -1; });
 	window.localStorage['full-data'] = JSON.stringify(compress(full));
 	createAll();
 }
