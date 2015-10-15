@@ -1,6 +1,6 @@
 var full, width, transitioning = false,
 	height = 600, pad = 5, delay = 100,
-	fields = ['Name', 'Artist', 'Album', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating', 'Kind'];
+	fields = ['Name', 'Artist', 'Album', 'Bit Rate', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating', 'Kind'];
 
 $(function() {
 	width = $('.svg').width();
@@ -69,6 +69,7 @@ function createAll() {
 	createDistribution('Rating', function(d) { return d.Rating / 20; }, '#ratingDistribution', function(d) { return d.Genre; }, 'Top Genres', 1);
 	createDistribution('Total Time', function(d) { return d['Total Time'] / 1000; }, '#timeDistribution', function(d) { return d.Genre; }, 'Top Genres', 10);
 	createDistribution('Rating', function(d) { return d.Rating / 20; }, '#artistRatingDistribution', function(d) { return d.Artist; }, 'Top Artists', 1);
+	createDistribution('Bit Rates', function(d) { return d['Bit Rate']; }, '#bitRateDistribution', function(d) { return d.Genre; }, 'Bit Rates', 5);
 	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d.Artist; }, 'Top Artists', function(d) { return d.Name; });
 	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist + ' - ' + d['Play Count']; });
 	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist + ' - ' + d['Play Count']; });
