@@ -9,7 +9,7 @@ $(function() {
 		full = decompress(JSON.parse(stored));
 		createAll();
 	} else {
-		reset()
+		reset();
 	}
 });
 
@@ -28,11 +28,11 @@ function upload() {
 		var r = new FileReader();
 		r.onload = function(e) {
 			var doc = $.parseXML(e.target.result);
-			parseXML($(doc).children('plist').children('dict'))
-		}
-		r.readAsText(file)
+			parseXML($(doc).children('plist').children('dict'));
+		};
+		r.readAsText(file);
 	} else {
-		console.log('No file')
+		console.log('No file');
 	}
 }
 
@@ -41,7 +41,7 @@ function upload() {
  * @param xml - XML document containing track data
  */
 function parseXML(xml) {
-	var raw = xml.children('dict').children('dict')
+	var raw = xml.children('dict').children('dict');
 	full = $.makeArray(raw.map(function(i, d) {
 		var obj = {};
 		$(d).find('key').each(function(i, d) {
@@ -54,7 +54,7 @@ function parseXML(xml) {
 			}
 		});
 		return obj;
-	})).filter(function(d) { return d['Kind'] && d['Kind'].indexOf('audio') != -1; });
+	})).filter(function(d) { return d.Kind && d.Kind.indexOf('audio') != -1; });
 	window.localStorage['full-data'] = JSON.stringify(compress(full));
 	createAll();
 }
@@ -63,16 +63,16 @@ function parseXML(xml) {
  * Creates all visualizations
  */
 function createAll() {
-	createTop(function(d) { return d['Play Count']; }, '#topPlay', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist']; });
-	createTop(function(d) { return d['Skip Count']; }, '#topSkip', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist']; });
-	createDistribution('Play Count', function(d) { return d['Play Count']; }, '#playDistribution', function(d) { return d['Genre']; }, 'Top Genres', 5);
-	createDistribution('Rating', function(d) { return d['Rating'] / 20; }, '#ratingDistribution', function(d) { return d['Genre']; }, 'Top Genres', 1);
-	createDistribution('Total Time', function(d) { return d['Total Time'] / 1000; }, '#timeDistribution', function(d) { return d['Genre']; }, 'Top Genres', 10);
-	createDistribution('Rating', function(d) { return d['Rating'] / 20; }, '#artistRatingDistribution', function(d) { return d['Artist']; }, 'Top Artists', 1);
-	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d['Artist']; }, 'Top Artists', function(d) { return d['Name']; });
-	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist'] + ' - ' + d['Play Count']; });
-	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d['Genre']; }, 'Top Genres', function(d) { return d['Name'] + ' - ' + d['Artist'] + ' - ' + d['Play Count']; });
-	createDistribution('Last Play Hour', function(d) { return d['Play Date UTC'] ? new Date(d['Play Date UTC']).getHours() : null; }, '#intraday', function(d) { return d['Genre']; }, 'Top Genres', 1);
+	createTop(function(d) { return d['Play Count']; }, '#topPlay', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist; });
+	createTop(function(d) { return d['Skip Count']; }, '#topSkip', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist; });
+	createDistribution('Play Count', function(d) { return d['Play Count']; }, '#playDistribution', function(d) { return d.Genre; }, 'Top Genres', 5);
+	createDistribution('Rating', function(d) { return d.Rating / 20; }, '#ratingDistribution', function(d) { return d.Genre; }, 'Top Genres', 1);
+	createDistribution('Total Time', function(d) { return d['Total Time'] / 1000; }, '#timeDistribution', function(d) { return d.Genre; }, 'Top Genres', 10);
+	createDistribution('Rating', function(d) { return d.Rating / 20; }, '#artistRatingDistribution', function(d) { return d.Artist; }, 'Top Artists', 1);
+	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d.Artist; }, 'Top Artists', function(d) { return d.Name; });
+	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist + ' - ' + d['Play Count']; });
+	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist + ' - ' + d['Play Count']; });
+	createDistribution('Last Play Hour', function(d) { return d['Play Date UTC'] ? new Date(d['Play Date UTC']).getHours() : null; }, '#intraday', function(d) { return d.Genre; }, 'Top Genres', 1);
 }
 
 /**
@@ -87,31 +87,31 @@ function createTop(metricAccessor, id, legendAccessor, legendTitle, textAccessor
 	var margin = {left: 20, right: 40, top: 50, bottom: 20};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
-	
+
 	// Create SVG
 	var svg = d3.select(id).append('svg')
 		.attr('width', width).attr('height', height);
-	
+
 	// Initialize genre data
 	var legend = createLegend(full.slice(0), legendAccessor, svg, legendTitle, metricAccessor, refresh);
-	
-	refresh([])
-	
+
+	refresh([]);
+
 	// Refreshes data
 	function refresh(selected) {
 		// Initialize top song data
 		var data = getData(selected);
-		
+
 		var x0 = d3.max(data, function(d) { return getTextSize(d.name); }) + margin.left;
-		
+
 		// Create bars and count text
 		var scale = d3.scale.linear().domain([0, d3.max(data, function(d) { return metricAccessor(d.data); })]).range([0, width - margin.right - x0]);
 		svg.selectAll('.top-name').data(data).exit().remove();
 		svg.selectAll('.top-data').data(data).exit().remove();
 		svg.selectAll('.top-count').data(data).exit().remove();
-		
+
 		svg.selectAll('.top-name, .top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 0);
-		
+
 		setTimeout(function() {
 			var nameText = svg.selectAll('.top-name').data(data).enter()
 				.append('text')
@@ -131,25 +131,25 @@ function createTop(metricAccessor, id, legendAccessor, legendTitle, textAccessor
 				.attr('class', 'top-count')
 				.attr('transform', function(d) { return 'translate(' + (x0 + 5) + ',' + (d.y + 12) + ')'; })
 				.text(function(d) { return metricAccessor(d.data); });
-			
+
 			// Transitions
 			svg.selectAll('.top-data').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + x0 + ',' + d.y + ')'; })
-				.attr('width', function(d) { return scale(metricAccessor(d.data)); }).style('fill', function(d) { return getColor(d, legend); })
+				.attr('width', function(d) { return scale(metricAccessor(d.data)); }).style('fill', function(d) { return getColor(d, legend); });
 			svg.selectAll('.top-name').transition().duration(delay).delay(function(d, i) { return 10 * i; }).attr('transform', function(d) { return 'translate(' + (x0 - 5) + ',' + (d.y + 12) + ')'; })
 				.style('opacity', 1).text(function(d) { return d.name; });
 			svg.selectAll('.top-count').transition().duration(delay).delay(function(d, i) { return 10 * i; }).style('opacity', 1).attr('transform', function(d) { return 'translate(' + (scale(metricAccessor(d.data)) + x0 + 5) + ',' + (d.y + 15) + ')'; }).text(function(d) { return metricAccessor(d.data); });
-			
+
 			svg.selectAll('.top-data').on('click', function(d) {
-				queryYouTube(d.name)
-			})
-			
+				queryYouTube(d.name);
+			});
+
 			transitioning = false;
-		}, svg.selectAll('.top-data')[0].length == 0 ? 0 : delay);
+		}, svg.selectAll('.top-data')[0].length === 0 ? 0 : delay);
 	}
-	
+
 	// Filters down to top songs
 	function getData(selected) {
-		var filtered = full.slice(0).filter(function(d) { return metricAccessor(d) && (selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1); });
+		var filtered = full.slice(0).filter(function(d) { return metricAccessor(d) && (selected.length === 0 || selected.indexOf(legendAccessor(d)) != -1); });
 		var raw = filtered.sort(function(a, b) { return (metricAccessor(b) ? metricAccessor(b) : 0) - (metricAccessor(a) ? metricAccessor(a) : 0); }).slice(0, Math.min(filtered.length, 25));
 		var h = (height - margin.top - margin.bottom) / raw.length -  pad;
 		return raw.map(function(d, i) {
@@ -157,11 +157,11 @@ function createTop(metricAccessor, id, legendAccessor, legendTitle, textAccessor
 			return {data: d, y: (h + pad) * i + pad / 2 + margin.top, h: h, name: textAccessor(d)};
 		});
 	}
-	
+
 	// Get bar color
 	function getColor(d, genres) {
 		var c = $.grep(genres, function(g) { return g.name == legendAccessor(d.data); });
-		return c.length != 0 ? c[0].color : 'black';
+		return c.length !== 0 ? c[0].color : 'black';
 	}
 }
 
@@ -178,11 +178,11 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 	var margin = {left: 55, right: 20, top: 50, bottom: 40};
 	// Remove old svg
 	d3.select(id).select('svg').remove();
-	
+
 	// Create SVG
 	var svg = d3.select(id).append('svg')
 		.attr('width', width).attr('height', height);
-	
+
 	var xAxisEl = svg.append("g")
 	    .attr("class", "x axis")
 	    .attr("transform", "translate(" + margin.left + "," + (height - margin.bottom) + ")");
@@ -191,7 +191,7 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 		.attr("dy", margin.bottom - 5)
 		.style("text-anchor", "end")
 		.text(axisName);
-	
+
 	var yAxisEl = svg.append("g")
 	    .attr("class", "y axis")
 		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -201,13 +201,13 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 		.attr("dy", 5 - margin.left)
 		.style("text-anchor", "end")
 		.text("Song Count");
-	
+
 	// Initialize legend data
 	var legend = createLegend(full.slice(0), legendAccessor, svg, legendTitle, metricAccessor, refresh);
 	legend.push({color: 'black', val: 0, name: 'Other'});
-	
-	refresh([])
-	
+
+	refresh([]);
+
 	// Refreshes data
 	function refresh(selected) {
 		// Initialize top song data
@@ -216,22 +216,22 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 		var means = [{name: 'Mean', val: d3.mean(filtered, function(d) { return metricAccessor(d); })},
 		             {name: 'Median', val: d3.median(filtered, function(d) { return metricAccessor(d); })}];
 		var colors = d3.scale.category10();
-		
+
 		// Create bars and count text
 		var keyExtent = d3.extent(data, function(d) { return d.key; });
 		var scaleX = d3.scale.linear().domain([Math.min(0, keyExtent[0] - keyExtent[0] % bucket), keyExtent[1] - keyExtent[1] % bucket + bucket]).range([0, width - margin.left - margin.right]);
 		var scaleY = d3.scale.linear().domain([0, d3.max(data, function(d) {
 			return Object.keys(d.val).reduce(function(a, cur) { return a + parseInt(d.val[cur].count); }, 0);
 		}) * 1.1]).range([height - margin.bottom - margin.top, 0]);
-		
+
 		var xAxis = d3.svg.axis()
 		    .scale(scaleX)
 		    .orient("bottom");
-		
+
 		var yAxis = d3.svg.axis()
 		    .scale(scaleY)
 		    .orient("left");
-		
+
 		svg.selectAll('.dist-data').data([]).exit().transition().duration(delay)
 			.attr('height', 0)
 			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.key)) + ',' + (height - margin.bottom) + ')'; }).remove();
@@ -252,40 +252,40 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 					.attr('height', 0)
 					.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(e.key)) + ',' + (height - margin.bottom) + ')'; })
 					.style('fill', function(d, i) { return d.color; });
-				
+
 				// Transitions
 				svg.selectAll('.dist-data.bucket' + e.key).transition().duration(delay).delay(function(d, i) { return 10 * i; })
 					.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(e.key)) + ',' + (scaleY(d.start + d.count) + margin.top) + ')'; })
 					.attr('height', function(d) { return height - margin.bottom - margin.top - scaleY(d.count); })
 					.attr('width', function(d) { return e.w; });
 				transitioning = false;
-			}, delay * 1.5)
+			}, delay * 1.5);
 		});
 		svg.selectAll('.means').data(means).enter().append('line').attr('class', 'means')
 			.attr('y1', margin.top).attr('x1', function(d) { return margin.left + scaleX(d.val); })
 			.attr('y2', height - margin.bottom).attr('x2', function(d) { return margin.left + scaleX(d.val); });
-		
+
 		svg.selectAll('.meansText').data(means).enter().append('text').attr('class', 'meansText')
 			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.val) - 10) + ',' + (margin.top + 40) + ')rotate(-90)'; })
 			.text(function(d) { return d.name; });
-		
+
 		svg.selectAll('.means').transition().duration(2.5 * delay)
 			.attr('y1', margin.top).attr('x1', function(d) { return margin.left + scaleX(d.val); })
 			.attr('y2', height - margin.bottom).attr('x2', function(d) { return margin.left + scaleX(d.val); });
-		
+
 		svg.selectAll('.meansText').transition().duration(2.5 * delay)
 			.attr('transform', function(d) { return 'translate(' + (margin.left + scaleX(d.val) - 10) + ',' + (margin.top + 40) + ')rotate(-90)'; });
 
 		xAxisEl.transition().duration(delay).call(xAxis);
 		yAxisEl.transition().duration(delay).call(yAxis);
 	}
-	
+
 	// Aggregates filtered play count distributions
 	function getData(selected) {
-		var filtered = full.filter(function(d) { return metricAccessor(d) && (selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1); });
+		var filtered = full.filter(function(d) { return metricAccessor(d) && (selected.length === 0 || selected.indexOf(legendAccessor(d)) != -1); });
 		filtered.forEach(function(d) {
-			d['Temp'] = metricAccessor(d);
-			d['Temp'] -= d['Temp'] % bucket;
+			d.Temp = metricAccessor(d);
+			d.Temp -= d.Temp % bucket;
 		});
 		var raw = aggregateMetricLegend(filtered, 'Temp', legend, legendAccessor);
 		var extent = d3.extent(raw, function(d) { return parseInt(d.name); });
@@ -294,11 +294,11 @@ function createDistribution(axisName, metricAccessor, id, legendAccessor, legend
 			return {w: w * bucket, val: d.val, key: parseInt(d.name)};
 		});
 	}
-	
+
 	// Get bar color
 	function getColor(d, legend) {
 		var c = $.grep(legend, function(g) { return g.name == legendAccessor(d.data); });
-		return c.length != 0 ? c[0].color : 'black';
+		return c.length !== 0 ? c[0].color : 'black';
 	}
 }
 
@@ -314,42 +314,42 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAcc
 	var margin = {left: 20, right: 350, top: 50, bottom: 20}, cellSize = (width - margin.left - margin.right) / 54, height = cellSize * 8, lineHeight = 20;
 	// Remove old svg
 	d3.select(id).selectAll('svg').remove();
-	
+
 	// Initialize calendar data
 	var data = getData([]);
 	var years = d3.extent(Object.keys(data), function(d) { return parseInt(d.substring(0, 4)); });
-	
+
 	// Create SVG
 	var mainSvg = d3.select(id).append('svg')
 		.attr('width', width).attr('height', margin.top + margin.bottom + height * (years[1] - years[0] + 1));
-	
+
 	// Initialize legend data
 	var legend = createLegend(full.slice(0), legendAccessor, mainSvg, legendTitle, function(d) { return d['Play Count']; }, refresh);
-	
+
 	var day = d3.time.format("%w"),
 		week = d3.time.format("%U"),
 		format = d3.time.format("%Y-%m-%d");
-	
+
 	var focusStart = [width - margin.right, margin.top];
-	
+
 	var focusDate = mainSvg.append('text').attr('transform', 'translate(' + (focusStart[0] + 10) + ',' + (focusStart[1] + 40) +')')
 		.text('').style('font-size', 22);
-	
-	var focusResults = mainSvg.append('g').attr('transform', 'translate(' + (focusStart[0] + 10) + ',' + (focusStart[1] + 70) +')')
-	
+
+	var focusResults = mainSvg.append('g').attr('transform', 'translate(' + (focusStart[0] + 10) + ',' + (focusStart[1] + 70) +')');
+
 	var svg = mainSvg.selectAll("g.RdYlGn")
 		.data(d3.range(years[0], years[1] + 1).reverse())
 		.enter().append("g")
 		.attr("width", cellSize * 56)
 		.attr("height", height)
 		.attr("class", "RdYlGn")
-		.attr("transform", function(d, i) { return "translate(" + margin.left + "," + (margin.top + height * i + 20) + ")" });
-	
+		.attr("transform", function(d, i) { return "translate(" + margin.left + "," + (margin.top + height * i + 20) + ")"; });
+
 	svg.append("text")
 		.attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
 		.style("text-anchor", "middle")
 		.text(function(d) { return d; });
-	
+
 	var rect = svg.selectAll(".day")
 		.data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
 		.enter().append("rect")
@@ -358,19 +358,19 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAcc
 		.attr("height", cellSize - 1)
 		.attr("x", function(d) { return week(d) * cellSize; })
 		.attr("y", function(d) { return day(d) * cellSize; })
-		.datum(format)
-	
+		.datum(format);
+
 	rect.append("title")
 		.text(function(d) { return d; });
-	
+
 	svg.selectAll(".month")
 		.data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
 		.enter().append("path")
 		.attr("class", "month")
 		.attr("d", monthPath);
-	
-	refresh([])
-	
+
+	refresh([]);
+
 	// Refreshes data
 	function refresh(selected) {
 		// Initialize calendar data
@@ -379,34 +379,34 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAcc
 		var color = d3.scale.linear()
 			.domain([0, max])
 			.range(['#DDD', 'green']);
-		
+
 		svg.selectAll(".day").data([]).exit().transition().duration(delay * 10).delay(function(d, i) { return i; }).style('fill', 'white').select("title")
 			.text(function(d) { return d; });
-				
+
 		rect.filter(function(d) { return d in data; }).transition().duration(delay * 10).delay(function(d, i) { return i * 5; })
 			.style("fill", function(d) { return color(data[d]); })
 			.select("title")
 			.text(function(d) { return d + ": " + data[d] + ' Song' + (data[d] != 1 ? 's' : ''); });
-		
+
 		rect.on('click', function(d) {
 			$('#focus').removeAttr('id');
 			d3.select(this).attr('id', 'focus');
 			focusDate.text(d);
-			var old = full.slice(0).filter(function(e) { return format(new Date(metricAccessor(e))) == d && (selected.length == 0 || selected.indexOf(legendAccessor(e)) != -1); })
+			var old = full.slice(0).filter(function(e) { return format(new Date(metricAccessor(e))) == d && (selected.length === 0 || selected.indexOf(legendAccessor(e)) != -1); })
 				.sort(function(e, f) { return f['Play Count'] - e['Play Count']; });
-			old = old.slice(0, Math.min(old.length, Math.round((height * (years[1] - years[0] + 1) - 60) / lineHeight)))
+			old = old.slice(0, Math.min(old.length, Math.round((height * (years[1] - years[0] + 1) - 60) / lineHeight)));
 			focusResults.selectAll('text').data(old).exit().remove();
 			focusResults.selectAll('text').data(old).enter().append('text')
 				.attr('class', 'detailText')
-				.attr('transform', function(e, i) { return 'translate(0,' + lineHeight * i + ')'; })
+				.attr('transform', function(e, i) { return 'translate(0,' + lineHeight * i + ')'; });
 			focusResults.selectAll('text').text(textAccessor)
 				.on('click', function(d) {
-					queryYouTube(d.Name + ' - ' + d.Artist)
+					queryYouTube(d.Name + ' - ' + d.Artist);
 				});
 		});
 		transitioning = false;
 	}
-	
+
 	function monthPath(t0) {
 		var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
 			d0 = +day(t0), w0 = +week(t0),
@@ -417,11 +417,11 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAcc
 			+ "H" + (w1 + 1) * cellSize + "V" + 0
 			+ "H" + (w0 + 1) * cellSize + "Z";
 	}
-	
+
 	// Filters down to filtered data
 	function getData(selected) {
 		var format = d3.time.format("%Y-%m-%d");
-		var filtered = full.slice(0).filter(function(d) { return metricAccessor(d) && (selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1); });
+		var filtered = full.slice(0).filter(function(d) { return metricAccessor(d) && (selected.length === 0 || selected.indexOf(legendAccessor(d)) != -1); });
 		var raw = {};
 		filtered.filter(function(d) { return metricAccessor(d); }).forEach(function(d) {
 			var date = format(new Date(metricAccessor(d)));
@@ -442,7 +442,7 @@ function createCalendar(metricAccessor, id, legendAccessor, legendTitle, textAcc
  * @returns Filtered full data
  */
 function filterData(selected, legendAccessor) {
-	return full.filter(function(d) { return selected.length == 0 || selected.indexOf(legendAccessor(d)) != -1; });
+	return full.filter(function(d) { return selected.length === 0 || selected.indexOf(legendAccessor(d)) != -1; });
 }
 
 /**
@@ -465,8 +465,8 @@ function createLegend(full, accessor, svg, label, countAccessor, fn) {
 		total -= w + 4 * pad;
 		return {val: d.val, name: d.name, color: colors(i), w: w + 2 * pad, x: total};
 	});
-	svg.append('text').attr('transform', 'translate(' + (total - 10) + ',30)').text(label).style('font-size', '22px').style('text-anchor', 'end')
-	
+	svg.append('text').attr('transform', 'translate(' + (total - 10) + ',30)').text(label).style('font-size', '22px').style('text-anchor', 'end');
+
 	// Create genre text so size can be measured
 	var legends = svg.selectAll('legend').data(data).enter().append('g').attr('class', 'legend').on('click', function(d) {
 		if (!transitioning) {
@@ -514,7 +514,7 @@ function aggregateMetric(full, accessor, countAccessor) {
 				all[accessor(cur)] += countAccessor(cur);
 			} else if (accessor(cur)) {
 				all[accessor(cur)] = countAccessor(cur);
-			};
+			}
 		}
 		return all;
 	}, {}), function(k, v) {
@@ -534,24 +534,24 @@ function aggregateMetric(full, accessor, countAccessor) {
 function aggregateMetricLegend(full, metric, legend, legendAccessor) {
 	var data = [];
 	$.each(full.reduce(function(all, cur) {
-		if (all[cur[metric]] != undefined) {
-			if (all[cur[metric]][legendAccessor(cur)] != undefined) {
+		if (all[cur[metric]] !== undefined) {
+			if (all[cur[metric]][legendAccessor(cur)] !== undefined) {
 				all[cur[metric]][legendAccessor(cur)].count++;
 			} else {
-				all[cur[metric]]['Other'].count++;
+				all[cur[metric]].Other.count++;
 			}
-		} else if(cur[metric] != undefined && !isNaN(cur[metric])) {
+		} else if(cur[metric] !== undefined && !isNaN(cur[metric])) {
 			var base = {};
 			legend.forEach(function(d) {
 				base[d.name] = {color: d.color, count: 0, sort: d.val};
 			});
-			if (base[legendAccessor(cur)] != undefined) {
+			if (base[legendAccessor(cur)] !== undefined) {
 				base[legendAccessor(cur)].count = 1;
 			} else {
-				base['Other'].count = 1;
+				base.Other.count = 1;
 			}
 			all[cur[metric]] = base;
-		};
+		}
 		return all;
 	}, {}), function(k, v) {
 		data.push({name: k, val: v});
@@ -596,7 +596,7 @@ function compress(arr) {
 // Decompresses full data
 function decompress(arr) {
 	var fields = arr[0];
-	return arr.splice(1).reduce(function(a, cur) { var obj = {}; fields.forEach(function(d, i) { obj[d] = cur[i]; }); a.push(obj); return a; }, [])
+	return arr.splice(1).reduce(function(a, cur) { var obj = {}; fields.forEach(function(d, i) { obj[d] = cur[i]; }); a.push(obj); return a; }, []);
 }
 
 // Calculates number of bytes in a string
