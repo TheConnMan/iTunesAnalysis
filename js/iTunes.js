@@ -1,6 +1,7 @@
 var full, width, transitioning = false,
 	height = 600, pad = 5, delay = 100,
-	fields = ['Name', 'Artist', 'Album', 'Bit Rate', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating', 'Kind'];
+	fields = ['Name', 'Artist', 'Album', 'Bit Rate', 'Genre', 'Total Time', 'Date Added', 'Play Count', 'Play Date UTC', 'Skip Count', 'Rating', 'Kind'],
+  booleanFields = ['Podcast'];
 
 $(function() {
 	width = $('.svg').width();
@@ -52,9 +53,12 @@ function parseXML(xml) {
 				}
 				obj[$(this).text()] = val;
 			}
+      if (booleanFields.indexOf($(this).text()) != -1) {
+        obj[$(this).text()] = $(this).next()[0].nodeName === 'true';
+      }
 		});
 		return obj;
-	})).filter(function(d) { return d.Kind && d.Kind.indexOf('audio') != -1; });
+	})).filter(function(d) { return d.Kind && d.Kind.indexOf('audio') != -1 && !d.Podcast; });
 	window.localStorage['full-data'] = JSON.stringify(compress(full));
 	createAll();
 }
