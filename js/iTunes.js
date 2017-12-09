@@ -5,13 +5,7 @@ var full, width, transitioning = false,
 
 $(function() {
 	width = $('.svg').width();
-	var stored = window.localStorage['full-data'];
-	if (stored) {
-		full = decompress(JSON.parse(stored));
-		createAll();
-	} else {
-		reset();
-	}
+	reset();
 });
 
 /**
@@ -59,7 +53,6 @@ function parseXML(xml) {
 		});
 		return obj;
 	})).filter(function(d) { return d.Kind && d.Kind.indexOf('audio') != -1 && !d.Podcast; });
-	window.localStorage['full-data'] = JSON.stringify(compress(full));
 	createAll();
 }
 
