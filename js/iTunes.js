@@ -69,6 +69,7 @@ function createAll() {
 	createDistribution('Bit Rates', function(d) { return d['Bit Rate']; }, '#bitRateDistribution', function(d) { return d.Genre; }, 'Bit Rates', 5);
 	createTop(function(d) { return d['Play Count']; }, '#topArtist', function(d) { return d.Artist; }, 'Top Artists', function(d) { return d.Name; });
 	createCalendar(function(d) { return d['Play Date UTC']; }, '#lastGenre', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist + ' - ' + d['Play Count']; });
+	createTop(function(d) { return Math.round(1000 * 1000 * 3600 * 24 * d['Play Count'] / (new Date().getTime() - new Date(d['Date Added']).getTime())) / 1000; }, '#averagePlays', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist; });
 	createCalendar(function(d) { return d['Date Added']; }, '#addedGenre', function(d) { return d.Genre; }, 'Top Genres', function(d) { return d.Name + ' - ' + d.Artist + ' - ' + d['Play Count']; });
 	createDistribution('Last Play Hour', function(d) { return d['Play Date UTC'] ? new Date(d['Play Date UTC']).getHours() : null; }, '#intraday', function(d) { return d.Genre; }, 'Top Genres', 1);
 }
